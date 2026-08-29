@@ -1,4 +1,4 @@
-﻿# LUX â€” Language Uncertainty Extractor
+﻿# LUX: Language Uncertainty Extractor
 
 ## Project Overview
 LUX (Language Uncertainty Extractor) is a research project focused on **pre-generation hallucination-risk prediction** for open-weight Large Language Models (LLMs).
