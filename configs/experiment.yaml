@@ -1,0 +1,81 @@
+﻿project:
+  name: LUX â€” Language Uncertainty Extractor
+  research_title: Pre-Generation LLM Hallucination Risk Prediction
+  checkpoint: 1
+  status: specification
+
+research:
+  research_question: >
+    Can combining observable prompt-level features with the target LLM's
+    internal pre-generation hidden representations improve hallucination-risk
+    prediction compared with using either information source alone?
+  prediction_timing: pre-generation
+  target_variable: empirical_hallucination_risk
+  target_range: [0.0, 1.0]
+  risk_definition: incorrect_generations / total_generations
+
+target_model:
+  family: Qwen3
+  checkpoint: null
+  revision: null
+  tokenizer_revision: null
+  frozen: true
+
+source_datasets:
+  currently_available:
+    - SQuAD training dataset
+  approved_datasets: []
+  candidate_datasets:
+    - SQuAD
+    - Natural Questions
+    - TriviaQA
+    - HotpotQA
+
+prompt_features:
+  research_categories:
+    - linguistic
+    - syntactic
+    - complexity
+    - entity-related
+    - semantic
+  exact_features: null
+  semantic_embedding_model: null
+
+hidden_states:
+  enabled: true
+  candidate_layers: null
+  representation_strategy: null
+  layer_selection_method: null
+
+ground_truth:
+  multiple_generations: true
+  generation_count: null
+  generation_configuration: null
+  response_labels:
+    - CORRECT
+    - INCORRECT
+  evaluation_method: null
+  risk_formula: incorrect_generations / total_generations
+
+data_leakage:
+  generated_answers_as_predictor_features: false
+  qwen_fine_tuning: false
+  test_data_for_layer_selection: false
+  test_data_for_feature_selection: false
+  test_data_for_hyperparameter_selection: false
+
+experiments:
+  prompt_only_baseline: true
+  hidden_only_baseline: true
+  fusion_model: true
+
+evaluation:
+  continuous_metrics: null
+  binary_metrics: null
+
+reproducibility:
+  seeds: null
+  model_versions_recorded: true
+  dataset_versions_recorded: true
+  processing_steps_recorded: true
+
