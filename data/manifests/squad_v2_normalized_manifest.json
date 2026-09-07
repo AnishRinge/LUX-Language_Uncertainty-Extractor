@@ -1,0 +1,16 @@
+{
+  "dataset_id": "squad_v2_canonical_prompts",
+  "dataset_name": "SQuAD 2.0 Canonical Prompt Scenarios",
+  "source_reference": "Local SQuAD v2 train artifact",
+  "source_version": "v2.0",
+  "acquisition_date": "UNRESOLVED",
+  "license_type": "UNRESOLVED",
+  "raw_file_paths": [
+    "data\\prompts\\squad_v2_canonical_scenarios.json"
+  ],
+  "file_size": 204881909,
+  "sha256": "3373098b39be15abbb435f77c10f43a756e7d7bd021413f49c5a29359a59107e",
+  "processing_version": "0.1.0",
+  "status": "NORMALIZED",
+  "notes": "Normalized canonical prompt scenarios from SQuAD 2.0 train split (130,319 records)."
+}

@@ -1,0 +1,45 @@
+{
+  "checkpoint": "CP3.6",
+  "audit_timestamp": "2026-09-07T07:17:59.527293Z",
+  "project_identity": "LUX \u2014 Language Uncertainty Extractor",
+  "raw_dataset_verification": {
+    "path": "E:\\Projects\\LLM-Hallucination-Prediction\\datasets\\train-v2.0.json",
+    "sha256": "68dcfbb971bd3e96d5b46c7177b16c1a4e7d4bdef19fb204502738552dede002",
+    "expected_sha256": "68dcfbb971bd3e96d5b46c7177b16c1a4e7d4bdef19fb204502738552dede002",
+    "status": "PASS"
+  },
+  "canonical_dataset_verification": {
+    "path": "data\\prompts\\squad_v2_canonical_scenarios.json",
+    "total_records": 130319,
+    "answerable": 86821,
+    "unanswerable": 43498,
+    "status": "PASS"
+  },
+  "cp3_5_audit_status": "WARNING",
+  "reproducibility_metadata_status": "PASS",
+  "data_separation_status": "PASS",
+  "configuration_status": "PASS",
+  "documentation_consistency_status": "PASS",
+  "test_status": "PASS",
+  "environment_status": "PASS",
+  "pilot_input_readiness": "READY",
+  "remaining_research_decisions": [
+    "Exact Qwen3 checkpoint",
+    "Model/tokenizer revisions",
+    "Generation configuration",
+    "Number of independent generations per prompt",
+    "Generation sampling strategy",
+    "Evaluator design",
+    "Reference/evidence verification strategy",
+    "Claim extraction strategy",
+    "Materiality/adjudication policy",
+    "Human validation strategy",
+    "Pilot size",
+    "Pilot success criteria",
+    "Dataset sampling policy",
+    "Experimental split strategy",
+    "Hidden-state extraction strategy",
+    "Prompt-feature specification"
+  ],
+  "overall_readiness_status": "READY_FOR_PILOT"
+}

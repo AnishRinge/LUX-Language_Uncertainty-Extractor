@@ -1,4 +1,44 @@
-﻿.venv/
+﻿# Virtual environment
+.venv/
+venv/
+env/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment / secrets
 .env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Model caches / weights
+.cache/
+huggingface/
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Local datasets
+datasets/
+data/raw/
+data/processed/
+data/prompts/
+data/generations/
+data/evaluations/
+data/targets/
+
+# Keep manifests tracked
+!data/manifests/
+!data/manifests/**

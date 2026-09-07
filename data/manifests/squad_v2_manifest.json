@@ -1,0 +1,16 @@
+{
+  "dataset_id": "squad_v2_local",
+  "dataset_name": "SQuAD 2.0 Local Artifact",
+  "source_reference": "UNRESOLVED",
+  "source_version": "v2.0",
+  "acquisition_date": "UNRESOLVED",
+  "license_type": "UNRESOLVED",
+  "raw_file_paths": [
+    "E:\\Projects\\LLM-Hallucination-Prediction\\datasets\\train-v2.0.json"
+  ],
+  "file_size": 42123633,
+  "sha256": "68dcfbb971bd3e96d5b46c7177b16c1a4e7d4bdef19fb204502738552dede002",
+  "processing_version": "0.1.0",
+  "status": "VALIDATED",
+  "notes": "Structurally validated SQuAD 2.0 training artifact."
+}

@@ -1,0 +1,17 @@
+{
+  "artifact_path": "E:\\Projects\\LLM-Hallucination-Prediction\\datasets\\train-v2.0.json",
+  "file_size_bytes": 42123633,
+  "sha256": "68dcfbb971bd3e96d5b46c7177b16c1a4e7d4bdef19fb204502738552dede002",
+  "detected_format": "SQuAD v2.0",
+  "record_counts": {
+    "articles": 442,
+    "paragraphs": 19035,
+    "questions": 130319,
+    "answerable": 86821,
+    "unanswerable": 43498
+  },
+  "structural_validation_result": "VALIDATED_STRUCTURALLY",
+  "anomalies": [],
+  "validation_timestamp": "2026-08-30T07:08:29.545336Z",
+  "validator_version": "0.1.0"
+}

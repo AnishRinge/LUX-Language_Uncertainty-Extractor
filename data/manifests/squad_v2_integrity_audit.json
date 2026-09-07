@@ -1,0 +1,60 @@
+{
+  "dataset_identity": "SQuAD 2.0 Canonical Prompt Scenarios",
+  "raw_artifact_path": "E:\\Projects\\LLM-Hallucination-Prediction\\datasets\\train-v2.0.json",
+  "raw_sha256": "68dcfbb971bd3e96d5b46c7177b16c1a4e7d4bdef19fb204502738552dede002",
+  "raw_sha256_expected": "68dcfbb971bd3e96d5b46c7177b16c1a4e7d4bdef19fb204502738552dede002",
+  "raw_artifact_integrity_pass": true,
+  "canonical_artifact_path": "data\\prompts\\squad_v2_canonical_scenarios.json",
+  "canonical_sha256": "3373098b39be15abbb435f77c10f43a756e7d7bd021413f49c5a29359a59107e",
+  "audit_timestamp": "2026-09-07T07:14:44.121389Z",
+  "record_counts": {
+    "raw_total": 130319,
+    "canonical_total": 130319,
+    "raw_answerable": 86821,
+    "canonical_answerable": 86821,
+    "raw_unanswerable": 43498,
+    "canonical_unanswerable": 43498,
+    "total_difference": 0,
+    "answerable_difference": 0,
+    "unanswerable_difference": 0
+  },
+  "duplicate_statistics": {
+    "unique_sample_ids": 130319,
+    "duplicate_sample_id_count": 0,
+    "unique_original_ids": 130319,
+    "repeated_original_id_count": 0,
+    "unique_scenario_contents": 130286,
+    "duplicate_scenario_groups": 33,
+    "records_in_duplicate_groups": 66,
+    "max_duplicate_group_size": 2,
+    "unique_questions": 130217,
+    "repeated_question_count": 101,
+    "unique_contexts": 19029,
+    "repeated_context_count": 18813
+  },
+  "provenance_checks": {
+    "all_records_have_provenance": true,
+    "source_dataset_consistent": true
+  },
+  "forbidden_field_checks": {
+    "forbidden_fields_checked": [
+      "qwen_answer",
+      "generated_answer",
+      "hallucination_label",
+      "empirical_risk",
+      "evaluator_output",
+      "hidden_states",
+      "predictor_features"
+    ],
+    "forbidden_field_found": false
+  },
+  "leakage_checks": {
+    "target_leakage_found": false,
+    "cross_field_leakage_found": false
+  },
+  "validation_results": {
+    "anomalies_count": 0,
+    "anomalies": []
+  },
+  "overall_status": "WARNING"
+}
