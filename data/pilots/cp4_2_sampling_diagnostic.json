@@ -1,0 +1,5920 @@
+{
+  "diagnostic_metadata": {
+    "checkpoint": "CP4.2.1_sampling_diagnostic",
+    "purpose": "Instrumented single-prompt measurement of the effective sampling distribution under CP4.2's frozen decoding config, to test whether top_p=0.8 collapses the nucleus to one token.",
+    "created_at": "2026-10-05T18:25:17.559487+00:00",
+    "python_version": "3.11.5",
+    "torch_version": "2.14.0+cpu",
+    "transformers_version": "5.16.1",
+    "device": "cpu",
+    "execution_strategy": "CPU_ONLY",
+    "thinking_mode": false,
+    "thinking_enforcement": "qwen3_chat_template:enable_thinking=False",
+    "prompt_format": "qwen3_chat_template",
+    "model_name": "Qwen/Qwen3-1.7B",
+    "model_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+    "decoding_config": {
+      "do_sample": true,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "top_k": 20,
+      "max_new_tokens": 512,
+      "pad_token_id": 151643,
+      "top_k_nucleus_check": "min_tokens_to_keep=1, num_beams=None"
+    },
+    "seeds_used": [
+      1001,
+      1002,
+      1003
+    ],
+    "seed_source": "first three of cp42.SEEDS",
+    "generations_used": 3,
+    "generation_calls": 3,
+    "model_generate_calls": 3,
+    "load_time_sec": 42.664260387420654,
+    "cp4_2_artifact_sha256": "10ac27699e42b6c6627f8bd13ad7f1267ed20a4885b4f5fac9f12ece54eb5365",
+    "cp4_2_artifact_status": "unmodified",
+    "cp4_2_artifact_mtime": "2026-10-05T10:04:07.614547+00:00",
+    "fidelity_check": {
+      "reference_seed": 1001,
+      "reference_token_count": 44,
+      "reference_answer": "Note worthy about the bird population of Burma is that there are over 800 species, including parrots, peafowl, pheasants, crows, herons, and paddybirds.",
+      "diagnostic_seed_0_token_count": 44,
+      "pass": true,
+      "note": "Output-capture flags (output_scores/output_logits/return_dict_in_generate) must not alter sampling. Under CPU_ONLY this is deterministic, so the diagnostic seed-1001 output must byte-match the CP4.2 pilot seed-1001 output."
+    },
+    "caution": "This diagnostic changes nothing in CP4.2. Three generations are not sufficient for statistical estimation; they are only sufficient to read the candidate distribution directly."
+  },
+  "prompt": {
+    "sample_id": "squad_v2_5726f19edd62a815002e95e4",
+    "dataset_index": 61608,
+    "answerability": "ANSWERABLE",
+    "expected_behavior": "ANSWER",
+    "question": "What is note worthy about the bird population of Burma ?",
+    "context_length_chars": 773,
+    "prompt_text": "<|im_start|>system\nYou are a precise question answering assistant. Answer using only the context provided. If the context does not contain the answer, say that you do not know. Be concise.<|im_end|>\n<|im_start|>user\nTypical jungle animals, particularly tigers and leopards, occur sparsely in Myanmar. In upper Myanmar, there are rhinoceros, wild buffalo, wild boars, deer, antelope, and elephants, which are also tamed or bred in captivity for use as work animals, particularly in the lumber industry. Smaller mammals are also numerous, ranging from gibbons and monkeys to flying foxes and tapirs. The abundance of birds is notable with over 800 species, including parrots, peafowl, pheasants, crows, herons, and paddybirds. Among reptile species there are crocodiles, geckos, cobras, Burmese pythons, and turtles. Hundreds of species of freshwater fish are wide-ranging, plentiful and are very important food sources. For a list of protected areas, see List of protected areas of Myanmar.\n\nWhat is note worthy about the bird population of Burma ?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+    "prompt_token_count": 248,
+    "pad_token_id": 151643,
+    "eos_token_ids": [
+      151645,
+      151643
+    ]
+  },
+  "method": {
+    "output_capture": "generate(output_scores=True, output_logits=True, return_dict_in_generate=True)",
+    "scores_meaning": "post-processor logits (TemperatureLogitsWarper -> TopKLogitsWarper -> TopPLogitsWarper, min_tokens_to_keep=1) - exactly what torch.multinomial consumed",
+    "raw_logits_meaning": "pre-processor logits captured ONLY for cross-check; discarded after; never serialised",
+    "probs_used": "softmax(step_scores) - identical to torch.multinomial's distribution",
+    "nucleus_size_definition": "count of tokens with softmax prob > 0; equals count of finite logits surviving Temperature/TopK/TopP, i.e. the top-p nucleus size after top-k truncation",
+    "top1_prob_definition": "max softmax prob over the post-processor distribution",
+    "what_is_not_stored": "full vocabulary-sized logits tensors (per-step top-5 + scalars only)",
+    "full_logits_serialised": false,
+    "cross_check": "rebuilt processor chain applied to raw_logits must match captured scores"
+  },
+  "generations": [
+    {
+      "seed": 1001,
+      "generated_answer": "Note worthy about the bird population of Burma is that there are over 800 species, including parrots, peafowl, pheasants, crows, herons, and paddybirds.",
+      "generated_token_count": 44,
+      "gen_token_ids": [
+        9112,
+        27290,
+        911,
+        279,
+        11958,
+        7042,
+        315,
+        91571,
+        374,
+        429,
+        1052,
+        525,
+        916,
+        220,
+        23,
+        15,
+        15,
+        9419,
+        11,
+        2670,
+        1346,
+        89229,
+        11,
+        1051,
+        2577,
+        9605,
+        11,
+        281,
+        383,
+        300,
+        1783,
+        11,
+        272,
+        1811,
+        11,
+        1059,
+        2382,
+        11,
+        323,
+        281,
+        22478,
+        66361,
+        13,
+        151645
+      ],
+      "eos_reached": true,
+      "latency_sec": 77.16055130958557,
+      "cross_check_max_abs_diff": 0.0,
+      "steps": [
+        {
+          "step": 0,
+          "sampled_token_id": 9112,
+          "sampled_token_text": "Note",
+          "sampled_rank": 1,
+          "top1_token_id": 9112,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9112,
+              "prob": 1.0,
+              "token_text": "Note"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 1,
+          "sampled_token_id": 27290,
+          "sampled_token_text": " worthy",
+          "sampled_rank": 1,
+          "top1_token_id": 27290,
+          "top1_prob": 0.6097901463508606,
+          "nucleus_size": 2,
+          "nucleus_size_isfinite": 2,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 27290,
+              "prob": 0.6097901463508606,
+              "token_text": " worthy"
+            },
+            {
+              "rank": 2,
+              "token_id": 42529,
+              "prob": 0.3902098536491394,
+              "token_text": "worthy"
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 5,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 2,
+          "sampled_token_id": 911,
+          "sampled_token_text": " about",
+          "sampled_rank": 1,
+          "top1_token_id": 911,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 911,
+              "prob": 1.0,
+              "token_text": " about"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 3,
+          "sampled_token_id": 279,
+          "sampled_token_text": " the",
+          "sampled_rank": 1,
+          "top1_token_id": 279,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 279,
+              "prob": 1.0,
+              "token_text": " the"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 4,
+          "sampled_token_id": 11958,
+          "sampled_token_text": " bird",
+          "sampled_rank": 1,
+          "top1_token_id": 11958,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11958,
+              "prob": 1.0,
+              "token_text": " bird"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 5,
+          "sampled_token_id": 7042,
+          "sampled_token_text": " population",
+          "sampled_rank": 1,
+          "top1_token_id": 7042,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 7042,
+              "prob": 1.0,
+              "token_text": " population"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 6,
+          "sampled_token_id": 315,
+          "sampled_token_text": " of",
+          "sampled_rank": 1,
+          "top1_token_id": 315,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 315,
+              "prob": 1.0,
+              "token_text": " of"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 7,
+          "sampled_token_id": 91571,
+          "sampled_token_text": " Burma",
+          "sampled_rank": 1,
+          "top1_token_id": 91571,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 91571,
+              "prob": 1.0,
+              "token_text": " Burma"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 8,
+          "sampled_token_id": 374,
+          "sampled_token_text": " is",
+          "sampled_rank": 1,
+          "top1_token_id": 374,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 374,
+              "prob": 1.0,
+              "token_text": " is"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 9,
+          "sampled_token_id": 429,
+          "sampled_token_text": " that",
+          "sampled_rank": 1,
+          "top1_token_id": 429,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 429,
+              "prob": 1.0,
+              "token_text": " that"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 10,
+          "sampled_token_id": 1052,
+          "sampled_token_text": " there",
+          "sampled_rank": 1,
+          "top1_token_id": 1052,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1052,
+              "prob": 1.0,
+              "token_text": " there"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 11,
+          "sampled_token_id": 525,
+          "sampled_token_text": " are",
+          "sampled_rank": 1,
+          "top1_token_id": 525,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 525,
+              "prob": 1.0,
+              "token_text": " are"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 12,
+          "sampled_token_id": 916,
+          "sampled_token_text": " over",
+          "sampled_rank": 1,
+          "top1_token_id": 916,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 916,
+              "prob": 1.0,
+              "token_text": " over"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 13,
+          "sampled_token_id": 220,
+          "sampled_token_text": " ",
+          "sampled_rank": 1,
+          "top1_token_id": 220,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 220,
+              "prob": 1.0,
+              "token_text": " "
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 14,
+          "sampled_token_id": 23,
+          "sampled_token_text": "8",
+          "sampled_rank": 1,
+          "top1_token_id": 23,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 23,
+              "prob": 1.0,
+              "token_text": "8"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 15,
+          "sampled_token_id": 15,
+          "sampled_token_text": "0",
+          "sampled_rank": 1,
+          "top1_token_id": 15,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 15,
+              "prob": 1.0,
+              "token_text": "0"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 16,
+          "sampled_token_id": 15,
+          "sampled_token_text": "0",
+          "sampled_rank": 1,
+          "top1_token_id": 15,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 15,
+              "prob": 1.0,
+              "token_text": "0"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 17,
+          "sampled_token_id": 9419,
+          "sampled_token_text": " species",
+          "sampled_rank": 1,
+          "top1_token_id": 9419,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9419,
+              "prob": 1.0,
+              "token_text": " species"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 18,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 19,
+          "sampled_token_id": 2670,
+          "sampled_token_text": " including",
+          "sampled_rank": 1,
+          "top1_token_id": 2670,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2670,
+              "prob": 1.0,
+              "token_text": " including"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 20,
+          "sampled_token_id": 1346,
+          "sampled_token_text": " par",
+          "sampled_rank": 1,
+          "top1_token_id": 1346,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1346,
+              "prob": 1.0,
+              "token_text": " par"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 21,
+          "sampled_token_id": 89229,
+          "sampled_token_text": "rots",
+          "sampled_rank": 1,
+          "top1_token_id": 89229,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 89229,
+              "prob": 1.0,
+              "token_text": "rots"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 22,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 23,
+          "sampled_token_id": 1051,
+          "sampled_token_text": " pe",
+          "sampled_rank": 1,
+          "top1_token_id": 1051,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1051,
+              "prob": 1.0,
+              "token_text": " pe"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 24,
+          "sampled_token_id": 2577,
+          "sampled_token_text": "af",
+          "sampled_rank": 1,
+          "top1_token_id": 2577,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2577,
+              "prob": 1.0,
+              "token_text": "af"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 25,
+          "sampled_token_id": 9605,
+          "sampled_token_text": "owl",
+          "sampled_rank": 1,
+          "top1_token_id": 9605,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9605,
+              "prob": 1.0,
+              "token_text": "owl"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 26,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 27,
+          "sampled_token_id": 281,
+          "sampled_token_text": " p",
+          "sampled_rank": 1,
+          "top1_token_id": 281,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 281,
+              "prob": 1.0,
+              "token_text": " p"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 28,
+          "sampled_token_id": 383,
+          "sampled_token_text": "he",
+          "sampled_rank": 1,
+          "top1_token_id": 383,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 383,
+              "prob": 1.0,
+              "token_text": "he"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 29,
+          "sampled_token_id": 300,
+          "sampled_token_text": "as",
+          "sampled_rank": 1,
+          "top1_token_id": 300,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 300,
+              "prob": 1.0,
+              "token_text": "as"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 30,
+          "sampled_token_id": 1783,
+          "sampled_token_text": "ants",
+          "sampled_rank": 1,
+          "top1_token_id": 1783,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1783,
+              "prob": 1.0,
+              "token_text": "ants"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 31,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 32,
+          "sampled_token_id": 272,
+          "sampled_token_text": " c",
+          "sampled_rank": 1,
+          "top1_token_id": 272,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 272,
+              "prob": 1.0,
+              "token_text": " c"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 33,
+          "sampled_token_id": 1811,
+          "sampled_token_text": "rows",
+          "sampled_rank": 1,
+          "top1_token_id": 1811,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1811,
+              "prob": 1.0,
+              "token_text": "rows"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 34,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 35,
+          "sampled_token_id": 1059,
+          "sampled_token_text": " her",
+          "sampled_rank": 1,
+          "top1_token_id": 1059,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1059,
+              "prob": 1.0,
+              "token_text": " her"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 36,
+          "sampled_token_id": 2382,
+          "sampled_token_text": "ons",
+          "sampled_rank": 1,
+          "top1_token_id": 2382,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2382,
+              "prob": 1.0,
+              "token_text": "ons"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 37,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 38,
+          "sampled_token_id": 323,
+          "sampled_token_text": " and",
+          "sampled_rank": 1,
+          "top1_token_id": 323,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 323,
+              "prob": 1.0,
+              "token_text": " and"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 39,
+          "sampled_token_id": 281,
+          "sampled_token_text": " p",
+          "sampled_rank": 1,
+          "top1_token_id": 281,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 281,
+              "prob": 1.0,
+              "token_text": " p"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 40,
+          "sampled_token_id": 22478,
+          "sampled_token_text": "addy",
+          "sampled_rank": 1,
+          "top1_token_id": 22478,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 22478,
+              "prob": 1.0,
+              "token_text": "addy"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 41,
+          "sampled_token_id": 66361,
+          "sampled_token_text": "birds",
+          "sampled_rank": 1,
+          "top1_token_id": 66361,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 66361,
+              "prob": 1.0,
+              "token_text": "birds"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 42,
+          "sampled_token_id": 13,
+          "sampled_token_text": ".",
+          "sampled_rank": 1,
+          "top1_token_id": 13,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 13,
+              "prob": 1.0,
+              "token_text": "."
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 43,
+          "sampled_token_id": 151645,
+          "sampled_token_text": "<|im_end|>",
+          "sampled_rank": 1,
+          "top1_token_id": 151645,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 151645,
+              "prob": 1.0,
+              "token_text": "<|im_end|>"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "generated_answer": "Note worthy about the bird population of Burma is that there are over 800 species, including parrots, peafowl, pheasants, crows, herons, and paddybirds.",
+      "generated_token_count": 44,
+      "gen_token_ids": [
+        9112,
+        27290,
+        911,
+        279,
+        11958,
+        7042,
+        315,
+        91571,
+        374,
+        429,
+        1052,
+        525,
+        916,
+        220,
+        23,
+        15,
+        15,
+        9419,
+        11,
+        2670,
+        1346,
+        89229,
+        11,
+        1051,
+        2577,
+        9605,
+        11,
+        281,
+        383,
+        300,
+        1783,
+        11,
+        272,
+        1811,
+        11,
+        1059,
+        2382,
+        11,
+        323,
+        281,
+        22478,
+        66361,
+        13,
+        151645
+      ],
+      "eos_reached": true,
+      "latency_sec": 55.37919616699219,
+      "cross_check_max_abs_diff": 0.0,
+      "steps": [
+        {
+          "step": 0,
+          "sampled_token_id": 9112,
+          "sampled_token_text": "Note",
+          "sampled_rank": 1,
+          "top1_token_id": 9112,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9112,
+              "prob": 1.0,
+              "token_text": "Note"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 1,
+          "sampled_token_id": 27290,
+          "sampled_token_text": " worthy",
+          "sampled_rank": 1,
+          "top1_token_id": 27290,
+          "top1_prob": 0.6097901463508606,
+          "nucleus_size": 2,
+          "nucleus_size_isfinite": 2,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 27290,
+              "prob": 0.6097901463508606,
+              "token_text": " worthy"
+            },
+            {
+              "rank": 2,
+              "token_id": 42529,
+              "prob": 0.3902098536491394,
+              "token_text": "worthy"
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 5,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 2,
+          "sampled_token_id": 911,
+          "sampled_token_text": " about",
+          "sampled_rank": 1,
+          "top1_token_id": 911,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 911,
+              "prob": 1.0,
+              "token_text": " about"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 3,
+          "sampled_token_id": 279,
+          "sampled_token_text": " the",
+          "sampled_rank": 1,
+          "top1_token_id": 279,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 279,
+              "prob": 1.0,
+              "token_text": " the"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 4,
+          "sampled_token_id": 11958,
+          "sampled_token_text": " bird",
+          "sampled_rank": 1,
+          "top1_token_id": 11958,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11958,
+              "prob": 1.0,
+              "token_text": " bird"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 5,
+          "sampled_token_id": 7042,
+          "sampled_token_text": " population",
+          "sampled_rank": 1,
+          "top1_token_id": 7042,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 7042,
+              "prob": 1.0,
+              "token_text": " population"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 6,
+          "sampled_token_id": 315,
+          "sampled_token_text": " of",
+          "sampled_rank": 1,
+          "top1_token_id": 315,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 315,
+              "prob": 1.0,
+              "token_text": " of"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 7,
+          "sampled_token_id": 91571,
+          "sampled_token_text": " Burma",
+          "sampled_rank": 1,
+          "top1_token_id": 91571,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 91571,
+              "prob": 1.0,
+              "token_text": " Burma"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 8,
+          "sampled_token_id": 374,
+          "sampled_token_text": " is",
+          "sampled_rank": 1,
+          "top1_token_id": 374,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 374,
+              "prob": 1.0,
+              "token_text": " is"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 9,
+          "sampled_token_id": 429,
+          "sampled_token_text": " that",
+          "sampled_rank": 1,
+          "top1_token_id": 429,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 429,
+              "prob": 1.0,
+              "token_text": " that"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 10,
+          "sampled_token_id": 1052,
+          "sampled_token_text": " there",
+          "sampled_rank": 1,
+          "top1_token_id": 1052,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1052,
+              "prob": 1.0,
+              "token_text": " there"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 11,
+          "sampled_token_id": 525,
+          "sampled_token_text": " are",
+          "sampled_rank": 1,
+          "top1_token_id": 525,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 525,
+              "prob": 1.0,
+              "token_text": " are"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 12,
+          "sampled_token_id": 916,
+          "sampled_token_text": " over",
+          "sampled_rank": 1,
+          "top1_token_id": 916,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 916,
+              "prob": 1.0,
+              "token_text": " over"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 13,
+          "sampled_token_id": 220,
+          "sampled_token_text": " ",
+          "sampled_rank": 1,
+          "top1_token_id": 220,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 220,
+              "prob": 1.0,
+              "token_text": " "
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 14,
+          "sampled_token_id": 23,
+          "sampled_token_text": "8",
+          "sampled_rank": 1,
+          "top1_token_id": 23,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 23,
+              "prob": 1.0,
+              "token_text": "8"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 15,
+          "sampled_token_id": 15,
+          "sampled_token_text": "0",
+          "sampled_rank": 1,
+          "top1_token_id": 15,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 15,
+              "prob": 1.0,
+              "token_text": "0"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 16,
+          "sampled_token_id": 15,
+          "sampled_token_text": "0",
+          "sampled_rank": 1,
+          "top1_token_id": 15,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 15,
+              "prob": 1.0,
+              "token_text": "0"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 17,
+          "sampled_token_id": 9419,
+          "sampled_token_text": " species",
+          "sampled_rank": 1,
+          "top1_token_id": 9419,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9419,
+              "prob": 1.0,
+              "token_text": " species"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 18,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 19,
+          "sampled_token_id": 2670,
+          "sampled_token_text": " including",
+          "sampled_rank": 1,
+          "top1_token_id": 2670,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2670,
+              "prob": 1.0,
+              "token_text": " including"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 20,
+          "sampled_token_id": 1346,
+          "sampled_token_text": " par",
+          "sampled_rank": 1,
+          "top1_token_id": 1346,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1346,
+              "prob": 1.0,
+              "token_text": " par"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 21,
+          "sampled_token_id": 89229,
+          "sampled_token_text": "rots",
+          "sampled_rank": 1,
+          "top1_token_id": 89229,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 89229,
+              "prob": 1.0,
+              "token_text": "rots"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 22,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 23,
+          "sampled_token_id": 1051,
+          "sampled_token_text": " pe",
+          "sampled_rank": 1,
+          "top1_token_id": 1051,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1051,
+              "prob": 1.0,
+              "token_text": " pe"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 24,
+          "sampled_token_id": 2577,
+          "sampled_token_text": "af",
+          "sampled_rank": 1,
+          "top1_token_id": 2577,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2577,
+              "prob": 1.0,
+              "token_text": "af"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 25,
+          "sampled_token_id": 9605,
+          "sampled_token_text": "owl",
+          "sampled_rank": 1,
+          "top1_token_id": 9605,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9605,
+              "prob": 1.0,
+              "token_text": "owl"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 26,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 27,
+          "sampled_token_id": 281,
+          "sampled_token_text": " p",
+          "sampled_rank": 1,
+          "top1_token_id": 281,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 281,
+              "prob": 1.0,
+              "token_text": " p"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 28,
+          "sampled_token_id": 383,
+          "sampled_token_text": "he",
+          "sampled_rank": 1,
+          "top1_token_id": 383,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 383,
+              "prob": 1.0,
+              "token_text": "he"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 29,
+          "sampled_token_id": 300,
+          "sampled_token_text": "as",
+          "sampled_rank": 1,
+          "top1_token_id": 300,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 300,
+              "prob": 1.0,
+              "token_text": "as"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 30,
+          "sampled_token_id": 1783,
+          "sampled_token_text": "ants",
+          "sampled_rank": 1,
+          "top1_token_id": 1783,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1783,
+              "prob": 1.0,
+              "token_text": "ants"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 31,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 32,
+          "sampled_token_id": 272,
+          "sampled_token_text": " c",
+          "sampled_rank": 1,
+          "top1_token_id": 272,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 272,
+              "prob": 1.0,
+              "token_text": " c"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 33,
+          "sampled_token_id": 1811,
+          "sampled_token_text": "rows",
+          "sampled_rank": 1,
+          "top1_token_id": 1811,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1811,
+              "prob": 1.0,
+              "token_text": "rows"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 34,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 35,
+          "sampled_token_id": 1059,
+          "sampled_token_text": " her",
+          "sampled_rank": 1,
+          "top1_token_id": 1059,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1059,
+              "prob": 1.0,
+              "token_text": " her"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 36,
+          "sampled_token_id": 2382,
+          "sampled_token_text": "ons",
+          "sampled_rank": 1,
+          "top1_token_id": 2382,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2382,
+              "prob": 1.0,
+              "token_text": "ons"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 37,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 38,
+          "sampled_token_id": 323,
+          "sampled_token_text": " and",
+          "sampled_rank": 1,
+          "top1_token_id": 323,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 323,
+              "prob": 1.0,
+              "token_text": " and"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 39,
+          "sampled_token_id": 281,
+          "sampled_token_text": " p",
+          "sampled_rank": 1,
+          "top1_token_id": 281,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 281,
+              "prob": 1.0,
+              "token_text": " p"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 40,
+          "sampled_token_id": 22478,
+          "sampled_token_text": "addy",
+          "sampled_rank": 1,
+          "top1_token_id": 22478,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 22478,
+              "prob": 1.0,
+              "token_text": "addy"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 41,
+          "sampled_token_id": 66361,
+          "sampled_token_text": "birds",
+          "sampled_rank": 1,
+          "top1_token_id": 66361,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 66361,
+              "prob": 1.0,
+              "token_text": "birds"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 42,
+          "sampled_token_id": 13,
+          "sampled_token_text": ".",
+          "sampled_rank": 1,
+          "top1_token_id": 13,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 13,
+              "prob": 1.0,
+              "token_text": "."
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 43,
+          "sampled_token_id": 151645,
+          "sampled_token_text": "<|im_end|>",
+          "sampled_rank": 1,
+          "top1_token_id": 151645,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 151645,
+              "prob": 1.0,
+              "token_text": "<|im_end|>"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        }
+      ]
+    },
+    {
+      "seed": 1003,
+      "generated_answer": "Noteworthy about the bird population of Burma is that there are over 800 species, including parrots, peafowl, pheasants, crows, herons, and paddybirds.",
+      "generated_token_count": 44,
+      "gen_token_ids": [
+        9112,
+        42529,
+        911,
+        279,
+        11958,
+        7042,
+        315,
+        91571,
+        374,
+        429,
+        1052,
+        525,
+        916,
+        220,
+        23,
+        15,
+        15,
+        9419,
+        11,
+        2670,
+        1346,
+        89229,
+        11,
+        1051,
+        2577,
+        9605,
+        11,
+        281,
+        383,
+        300,
+        1783,
+        11,
+        272,
+        1811,
+        11,
+        1059,
+        2382,
+        11,
+        323,
+        281,
+        22478,
+        66361,
+        13,
+        151645
+      ],
+      "eos_reached": true,
+      "latency_sec": 65.6856381893158,
+      "cross_check_max_abs_diff": 0.0,
+      "steps": [
+        {
+          "step": 0,
+          "sampled_token_id": 9112,
+          "sampled_token_text": "Note",
+          "sampled_rank": 1,
+          "top1_token_id": 9112,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9112,
+              "prob": 1.0,
+              "token_text": "Note"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 1,
+          "sampled_token_id": 42529,
+          "sampled_token_text": "worthy",
+          "sampled_rank": 2,
+          "top1_token_id": 27290,
+          "top1_prob": 0.6097901463508606,
+          "nucleus_size": 2,
+          "nucleus_size_isfinite": 2,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 27290,
+              "prob": 0.6097901463508606,
+              "token_text": " worthy"
+            },
+            {
+              "rank": 2,
+              "token_id": 42529,
+              "prob": 0.3902098536491394,
+              "token_text": "worthy"
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 5,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 2,
+          "sampled_token_id": 911,
+          "sampled_token_text": " about",
+          "sampled_rank": 1,
+          "top1_token_id": 911,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 911,
+              "prob": 1.0,
+              "token_text": " about"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 3,
+          "sampled_token_id": 279,
+          "sampled_token_text": " the",
+          "sampled_rank": 1,
+          "top1_token_id": 279,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 279,
+              "prob": 1.0,
+              "token_text": " the"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 4,
+          "sampled_token_id": 11958,
+          "sampled_token_text": " bird",
+          "sampled_rank": 1,
+          "top1_token_id": 11958,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11958,
+              "prob": 1.0,
+              "token_text": " bird"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 5,
+          "sampled_token_id": 7042,
+          "sampled_token_text": " population",
+          "sampled_rank": 1,
+          "top1_token_id": 7042,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 7042,
+              "prob": 1.0,
+              "token_text": " population"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 6,
+          "sampled_token_id": 315,
+          "sampled_token_text": " of",
+          "sampled_rank": 1,
+          "top1_token_id": 315,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 315,
+              "prob": 1.0,
+              "token_text": " of"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 7,
+          "sampled_token_id": 91571,
+          "sampled_token_text": " Burma",
+          "sampled_rank": 1,
+          "top1_token_id": 91571,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 91571,
+              "prob": 1.0,
+              "token_text": " Burma"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 8,
+          "sampled_token_id": 374,
+          "sampled_token_text": " is",
+          "sampled_rank": 1,
+          "top1_token_id": 374,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 374,
+              "prob": 1.0,
+              "token_text": " is"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 9,
+          "sampled_token_id": 429,
+          "sampled_token_text": " that",
+          "sampled_rank": 1,
+          "top1_token_id": 429,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 429,
+              "prob": 1.0,
+              "token_text": " that"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 10,
+          "sampled_token_id": 1052,
+          "sampled_token_text": " there",
+          "sampled_rank": 1,
+          "top1_token_id": 1052,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1052,
+              "prob": 1.0,
+              "token_text": " there"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 11,
+          "sampled_token_id": 525,
+          "sampled_token_text": " are",
+          "sampled_rank": 1,
+          "top1_token_id": 525,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 525,
+              "prob": 1.0,
+              "token_text": " are"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 12,
+          "sampled_token_id": 916,
+          "sampled_token_text": " over",
+          "sampled_rank": 1,
+          "top1_token_id": 916,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 916,
+              "prob": 1.0,
+              "token_text": " over"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 13,
+          "sampled_token_id": 220,
+          "sampled_token_text": " ",
+          "sampled_rank": 1,
+          "top1_token_id": 220,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 220,
+              "prob": 1.0,
+              "token_text": " "
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 14,
+          "sampled_token_id": 23,
+          "sampled_token_text": "8",
+          "sampled_rank": 1,
+          "top1_token_id": 23,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 23,
+              "prob": 1.0,
+              "token_text": "8"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 15,
+          "sampled_token_id": 15,
+          "sampled_token_text": "0",
+          "sampled_rank": 1,
+          "top1_token_id": 15,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 15,
+              "prob": 1.0,
+              "token_text": "0"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 16,
+          "sampled_token_id": 15,
+          "sampled_token_text": "0",
+          "sampled_rank": 1,
+          "top1_token_id": 15,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 15,
+              "prob": 1.0,
+              "token_text": "0"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 17,
+          "sampled_token_id": 9419,
+          "sampled_token_text": " species",
+          "sampled_rank": 1,
+          "top1_token_id": 9419,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9419,
+              "prob": 1.0,
+              "token_text": " species"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 18,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 19,
+          "sampled_token_id": 2670,
+          "sampled_token_text": " including",
+          "sampled_rank": 1,
+          "top1_token_id": 2670,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2670,
+              "prob": 1.0,
+              "token_text": " including"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 20,
+          "sampled_token_id": 1346,
+          "sampled_token_text": " par",
+          "sampled_rank": 1,
+          "top1_token_id": 1346,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1346,
+              "prob": 1.0,
+              "token_text": " par"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 21,
+          "sampled_token_id": 89229,
+          "sampled_token_text": "rots",
+          "sampled_rank": 1,
+          "top1_token_id": 89229,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 89229,
+              "prob": 1.0,
+              "token_text": "rots"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 22,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 23,
+          "sampled_token_id": 1051,
+          "sampled_token_text": " pe",
+          "sampled_rank": 1,
+          "top1_token_id": 1051,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1051,
+              "prob": 1.0,
+              "token_text": " pe"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 24,
+          "sampled_token_id": 2577,
+          "sampled_token_text": "af",
+          "sampled_rank": 1,
+          "top1_token_id": 2577,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2577,
+              "prob": 1.0,
+              "token_text": "af"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 25,
+          "sampled_token_id": 9605,
+          "sampled_token_text": "owl",
+          "sampled_rank": 1,
+          "top1_token_id": 9605,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 9605,
+              "prob": 1.0,
+              "token_text": "owl"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 26,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 27,
+          "sampled_token_id": 281,
+          "sampled_token_text": " p",
+          "sampled_rank": 1,
+          "top1_token_id": 281,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 281,
+              "prob": 1.0,
+              "token_text": " p"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 28,
+          "sampled_token_id": 383,
+          "sampled_token_text": "he",
+          "sampled_rank": 1,
+          "top1_token_id": 383,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 383,
+              "prob": 1.0,
+              "token_text": "he"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 29,
+          "sampled_token_id": 300,
+          "sampled_token_text": "as",
+          "sampled_rank": 1,
+          "top1_token_id": 300,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 300,
+              "prob": 1.0,
+              "token_text": "as"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 30,
+          "sampled_token_id": 1783,
+          "sampled_token_text": "ants",
+          "sampled_rank": 1,
+          "top1_token_id": 1783,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1783,
+              "prob": 1.0,
+              "token_text": "ants"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 31,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 32,
+          "sampled_token_id": 272,
+          "sampled_token_text": " c",
+          "sampled_rank": 1,
+          "top1_token_id": 272,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 272,
+              "prob": 1.0,
+              "token_text": " c"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 33,
+          "sampled_token_id": 1811,
+          "sampled_token_text": "rows",
+          "sampled_rank": 1,
+          "top1_token_id": 1811,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1811,
+              "prob": 1.0,
+              "token_text": "rows"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 34,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 35,
+          "sampled_token_id": 1059,
+          "sampled_token_text": " her",
+          "sampled_rank": 1,
+          "top1_token_id": 1059,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 1059,
+              "prob": 1.0,
+              "token_text": " her"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 36,
+          "sampled_token_id": 2382,
+          "sampled_token_text": "ons",
+          "sampled_rank": 1,
+          "top1_token_id": 2382,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 2382,
+              "prob": 1.0,
+              "token_text": "ons"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 37,
+          "sampled_token_id": 11,
+          "sampled_token_text": ",",
+          "sampled_rank": 1,
+          "top1_token_id": 11,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 11,
+              "prob": 1.0,
+              "token_text": ","
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 38,
+          "sampled_token_id": 323,
+          "sampled_token_text": " and",
+          "sampled_rank": 1,
+          "top1_token_id": 323,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 323,
+              "prob": 1.0,
+              "token_text": " and"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 39,
+          "sampled_token_id": 281,
+          "sampled_token_text": " p",
+          "sampled_rank": 1,
+          "top1_token_id": 281,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 281,
+              "prob": 1.0,
+              "token_text": " p"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 40,
+          "sampled_token_id": 22478,
+          "sampled_token_text": "addy",
+          "sampled_rank": 1,
+          "top1_token_id": 22478,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 22478,
+              "prob": 1.0,
+              "token_text": "addy"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 41,
+          "sampled_token_id": 66361,
+          "sampled_token_text": "birds",
+          "sampled_rank": 1,
+          "top1_token_id": 66361,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 66361,
+              "prob": 1.0,
+              "token_text": "birds"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 42,
+          "sampled_token_id": 13,
+          "sampled_token_text": ".",
+          "sampled_rank": 1,
+          "top1_token_id": 13,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 13,
+              "prob": 1.0,
+              "token_text": "."
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        },
+        {
+          "step": 43,
+          "sampled_token_id": 151645,
+          "sampled_token_text": "<|im_end|>",
+          "sampled_rank": 1,
+          "top1_token_id": 151645,
+          "top1_prob": 1.0,
+          "nucleus_size": 1,
+          "nucleus_size_isfinite": 1,
+          "top5": [
+            {
+              "rank": 1,
+              "token_id": 151645,
+              "prob": 1.0,
+              "token_text": "<|im_end|>"
+            },
+            {
+              "rank": 2,
+              "token_id": 1,
+              "prob": 0.0,
+              "token_text": "\""
+            },
+            {
+              "rank": 3,
+              "token_id": 3,
+              "prob": 0.0,
+              "token_text": "$"
+            },
+            {
+              "rank": 4,
+              "token_id": 4,
+              "prob": 0.0,
+              "token_text": "%"
+            },
+            {
+              "rank": 5,
+              "token_id": 0,
+              "prob": 0.0,
+              "token_text": "!"
+            }
+          ],
+          "cross_check_max_abs_diff": NaN
+        }
+      ]
+    }
+  ]
+}

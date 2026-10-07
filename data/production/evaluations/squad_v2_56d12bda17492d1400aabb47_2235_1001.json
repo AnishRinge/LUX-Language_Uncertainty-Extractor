@@ -1,0 +1,25 @@
+{
+  "schema_version": "CP4.4.0",
+  "evaluator_model": "gemini-3.8-flash",
+  "prompt_version": "CP4.4.0",
+  "timestamp": "2026-10-07T07:56:17.951165+00:00",
+  "source_generation_id": "squad_v2_56d12bda17492d1400aabb47:2235:1001",
+  "dataset_id": "squad_v2",
+  "evaluation_status": "FAILED",
+  "retry_count": 0,
+  "claims": null,
+  "generation_label": null,
+  "generation_failure_types": [],
+  "rationale": "",
+  "needs_human_review": false,
+  "error_type": "RemoteProtocolError",
+  "error_message": "gemini transient failure: Server disconnected without sending a response.",
+  "attempts": [
+    {
+      "attempt": 1,
+      "status": "RETRY",
+      "error_type": "TransientEvaluationError",
+      "error_message": "gemini transient failure: Server disconnected without sending a response."
+    }
+  ]
+}

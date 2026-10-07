@@ -1,0 +1,33 @@
+{
+  "schema_version": "CP4.4.0",
+  "evaluator_model": "gemini-3.8-flash",
+  "prompt_version": "CP4.4.0",
+  "timestamp": "2026-10-07T04:06:31.678012+00:00",
+  "source_generation_id": "squad_v2_5ad3e4e5604f3c001a3ff58f:69929:1006",
+  "dataset_id": "squad_v2",
+  "evaluation_status": "SUCCESS",
+  "retry_count": 0,
+  "claims": [
+    {
+      "claim_text": "Bermuda had one of the world's highest GDP per capita for most of the 20th century.",
+      "claim_status": "SUPPORTED",
+      "evidence_text": "Bermuda had one of the world's highest GDP per capita for most of the 20th century and several years beyond.",
+      "failure_type": "NONE",
+      "materiality": "NON_MATERIAL"
+    }
+  ],
+  "generation_label": "RELIABLE",
+  "generation_failure_types": [
+    "NONE"
+  ],
+  "rationale": "The generated response directly and accurately reflects the provided context without claiming more than what is supported by the text.",
+  "needs_human_review": false,
+  "error_type": null,
+  "error_message": null,
+  "attempts": [
+    {
+      "attempt": 1,
+      "status": "SUCCESS"
+    }
+  ]
+}

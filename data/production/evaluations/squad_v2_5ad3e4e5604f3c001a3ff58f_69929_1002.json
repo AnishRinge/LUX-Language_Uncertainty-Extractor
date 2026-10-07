@@ -1,0 +1,43 @@
+{
+  "schema_version": "CP4.4.0",
+  "evaluator_model": "gemini-3.8-flash",
+  "prompt_version": "CP4.4.0",
+  "timestamp": "2026-10-07T04:02:39.042534+00:00",
+  "source_generation_id": "squad_v2_5ad3e4e5604f3c001a3ff58f:69929:1002",
+  "dataset_id": "squad_v2",
+  "evaluation_status": "FAILED",
+  "retry_count": 3,
+  "claims": null,
+  "generation_label": null,
+  "generation_failure_types": [],
+  "rationale": "",
+  "needs_human_review": false,
+  "error_type": "ServerError",
+  "error_message": "gemini transient failure: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
+  "attempts": [
+    {
+      "attempt": 1,
+      "status": "RETRY",
+      "error_type": "TransientEvaluationError",
+      "error_message": "gemini transient failure: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}"
+    },
+    {
+      "attempt": 2,
+      "status": "RETRY",
+      "error_type": "TransientEvaluationError",
+      "error_message": "gemini transient failure: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}"
+    },
+    {
+      "attempt": 3,
+      "status": "RETRY",
+      "error_type": "TransientEvaluationError",
+      "error_message": "gemini transient failure: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}"
+    },
+    {
+      "attempt": 4,
+      "status": "RETRY",
+      "error_type": "TransientEvaluationError",
+      "error_message": "gemini transient failure: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}"
+    }
+  ]
+}

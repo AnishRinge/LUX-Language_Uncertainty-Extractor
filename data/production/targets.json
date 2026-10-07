@@ -1,0 +1,25 @@
+{
+  "targets": [
+    {
+      "prompt_id": "squad_v2_5ad3e4e5604f3c001a3ff58f",
+      "dataset_index": 69929,
+      "dataset_source": "squad_v2",
+      "answerability": "UNANSWERABLE_FROM_CONTEXT",
+      "n_generations": 10,
+      "empirical_hallucination_risk": null,
+      "n_resolved": 0,
+      "n_unreliable": 0,
+      "status_counts": {
+        "SUCCESS": 0,
+        "RETRY": 0,
+        "MANUAL_REVIEW": 0,
+        "FAILED": 0
+      },
+      "label_counts": {
+        "RELIABLE": 0,
+        "UNRELIABLE": 0,
+        "INADEQUATE": 0
+      }
+    }
+  ]
+}

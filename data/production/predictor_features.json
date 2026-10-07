@@ -1,0 +1,35 @@
+{
+  "pipeline": {
+    "artifact": "predictor_features",
+    "created_at": "2026-10-06T19:16:02.211307+00:00",
+    "model_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+    "excluded_fields": [
+      "generated_answer",
+      "generation_label",
+      "claim_evaluations",
+      "evaluation_status",
+      "empirical_hallucination_risk",
+      "status",
+      "latency",
+      "generated_token_count",
+      "reached_max_tokens",
+      "dataset_source"
+    ]
+  },
+  "predictor_features": [
+    {
+      "prompt_id": "squad_v2_5ad3e4e5604f3c001a3ff58f",
+      "dataset_index": 69929,
+      "answerability": "UNANSWERABLE_FROM_CONTEXT",
+      "hidden_state_ref": "data\\production\\hidden_states\\hs_69929.json",
+      "prompt_metrics": {
+        "question_chars": 59,
+        "context_chars": 725,
+        "question_ends_with_question_mark": true,
+        "answerability": "UNANSWERABLE_FROM_CONTEXT",
+        "question_tokens": 15,
+        "context_tokens": 142
+      }
+    }
+  ]
+}
