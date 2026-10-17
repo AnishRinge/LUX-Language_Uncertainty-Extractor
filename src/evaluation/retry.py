@@ -33,18 +33,36 @@ class RetryExhausted(Exception):
         )
 
 
+class QuotaExhaustedError(Exception):
+    """Raised when API quota is exhausted (e.g. HTTP 429 RESOURCE_EXHAUSTED).
+
+    This is a BATCH-STOPPING signal: the caller must terminate the batch
+    promptly rather than retrying, because quota will not reset until the
+    next billing/daily window. It is NOT retryable.
+    """
+
+
 def is_retryable_exception(exc: BaseException) -> bool:
     """Classify known transient error types by exception shape / name.
 
     Uses duck-typing on common attributes so it does not require importing the
     Google SDK (which may not be installed in the test environment).
     """
+    if isinstance(exc, QuotaExhaustedError):
+        return False
     if isinstance(exc, RetryableError):
         return True
     if isinstance(
         exc,
         (ConnectionError, TimeoutError, ConnectionResetError, BrokenPipeError),
     ):
+        return True
+    # httpx transport / protocol errors are subclasses of httpx.TransportError
+    # (which itself does NOT subclass stdlib ConnectionError), so they are not
+    # caught by the isinstance check above. Recognise them by module prefix
+    # and by name so that RemoteProtocolError, ConnectError, etc. are retried.
+    exc_module = type(exc).__module__ or ""
+    if exc_module.startswith("httpx"):
         return True
     code = getattr(exc, "code", None) or getattr(exc, "grpc_status_code", None)
     if code is not None:
@@ -60,6 +78,19 @@ def is_retryable_exception(exc: BaseException) -> bool:
         "InternalServerError",
         "BadGateway",
         "GatewayTimeout",
+        # httpx transport / protocol exceptions (by name for robustness)
+        "RemoteProtocolError",
+        "ProtocolError",
+        "ConnectError",
+        "ReadError",
+        "WriteError",
+        "PoolTimeout",
+        "NetworkError",
+        "ConnectTimeout",
+        "ReadTimeout",
+        "WriteTimeout",
+        "ProxyError",
+        "StreamError",
     ):
         return True
     message = (str(exc) or "").lower()

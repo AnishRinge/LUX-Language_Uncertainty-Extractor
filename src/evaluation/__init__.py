@@ -30,7 +30,7 @@ from .prompt import (
     build_messages,
     build_user_message,
 )
-from .retry import RetryPolicy, RetryExhausted, RetryableError, retry_call, is_retryable_exception
+from .retry import RetryPolicy, RetryExhausted, RetryableError, QuotaExhaustedError, retry_call, is_retryable_exception
 from .gemini_evaluator import (
     API_KEY_ENV_VAR,
     GeminiEvaluator,
@@ -70,6 +70,7 @@ __all__ = [
     "RetryPolicy",
     "RetryExhausted",
     "RetryableError",
+    "QuotaExhaustedError",
     "retry_call",
     "is_retryable_exception",
     "API_KEY_ENV_VAR",

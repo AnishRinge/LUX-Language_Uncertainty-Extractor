@@ -52,9 +52,11 @@ from src.evaluation.evaluator_runner import (
     build_request_from_cp4_2_5,
     compute_empirical_risk,
 )
-from src.evaluation.gemini_evaluator import GeminiEvaluator
+from src.evaluation.gemini_evaluator import GeminiEvaluator, EvaluationRequest, QuotaExhaustedError
 from src.evaluation.schemas import EvaluationRecord, EvaluationStatus, GenerationLabel
 from src.utils.hashing import compute_sha256
+
+DEFAULT_EVAL_WAIT_SECONDS = 1.0
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -91,6 +93,37 @@ PREDICTOR_FEATURES_PATH = PROD_DIR / "predictor_features.json"
 EVALUATIONS_DIR = PROD_DIR / "evaluations"
 TARGETS_PATH = PROD_DIR / "targets.json"
 CHECKPOINT_PATH = PROD_DIR / "checkpoint.json"
+
+API_KEY_ENV_VAR = "GEMINI_API_KEY"
+
+
+def _load_env_file() -> None:
+    """Best-effort: load ``GEMINI_API_KEY`` from a ``.env`` file into os.environ.
+
+    Mirrors the mechanism in ``run_cp4_5_a_smoke_test._load_env_file``. The key
+    is only materialized as an environment variable and is never printed.
+    """
+    if os.environ.get(API_KEY_ENV_VAR):
+        # Still allow numbered keys to be loaded from .env even when the
+        # primary key is already present in the environment.
+        pass
+    candidates = [Path(".env"), Path(".venv/.env")]
+    candidates += sorted(p for p in Path(".").glob("**/.env") if p != Path(".env"))
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            for raw in path.read_text(encoding="utf-8").splitlines():
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                if key == API_KEY_ENV_VAR or key.startswith(API_KEY_ENV_VAR + "_"):
+                    if not os.environ.get(key):
+                        os.environ[key] = value.strip().strip('"').strip("'")
+        except OSError:
+            continue
 
 
 def _now_iso() -> str:
@@ -551,38 +584,84 @@ def run_generation_phase(
 # ---------------------------------------------------------------------------
 # Phase 2: Evaluation phase (resumable, uses Gemini default retry policy)
 # ---------------------------------------------------------------------------
-def _generation_evaluation_path(generation_id: str) -> Path:
+def _generation_evaluation_path(generation_id: str, directory: Path = None) -> Path:
     safe = generation_id.replace(":", "_").replace("/", "_")
-    return EVALUATIONS_DIR / "{0}.json".format(safe)
+    base = directory if directory is not None else EVALUATIONS_DIR
+    return base / "{0}.json".format(safe)
 
 
 def _eval_requests_from_generations(
     generations: List[Dict[str, Any]],
     scenarios: Dict[int, Dict[str, Any]],
-) -> List[Tuple[Dict[str, Any], Any]]:
-    """Build evaluation requests for generations not yet evaluated."""
-    pending: List[Tuple[Dict[str, Any], Any]] = []
+    evaluations_dir: Path = EVALUATIONS_DIR,
+) -> Tuple[List[Tuple[Dict[str, Any], EvaluationRequest]], Dict[str, int]]:
+    """Build evaluation requests for generations not yet successfully evaluated.
+
+    Resumption contract (atomic + checkpoint-based):
+      * An evaluation file on disk is the source of truth (not the in-memory
+        ``evaluation_status`` field, which may be stale after an interrupted
+        run).
+      * Generations whose on-disk evaluation record has status SUCCESS or
+        MANUAL_REVIEW are **skipped** — previously successful evaluations are
+        never discarded or silently repeated.
+      * Generations whose on-disk record has status FAILED are
+        **eligible-for-retry** and are included in the pending list.
+      * Generations with no on-disk evaluation file are treated as missing.
+    Returns ``(pending, skipped_counts)``.
+    """
+    pending: List[Tuple[Dict[str, Any], EvaluationRequest]] = []
+    skipped: Dict[str, int] = {
+        "success": 0,
+        "manual_review": 0,
+        "failed_existing": 0,
+    }
+    terminal_keep = {s.value for s in (EvaluationStatus.SUCCESS, EvaluationStatus.MANUAL_REVIEW)}
     for gen in generations:
-        if gen.get("evaluation_status") is not None:
+        # Fast path: an interrupted run may have written status back.
+        mem_status = gen.get("evaluation_status")
+        if mem_status in terminal_keep:
+            if mem_status == EvaluationStatus.SUCCESS.value:
+                skipped["success"] += 1
+            else:
+                skipped["manual_review"] += 1
             continue
-        sid = gen["dataset_index"]
-        scenario = scenarios.get(sid)
-        if scenario is None:
-            continue
-        req = build_request_from_cp4_2_5(gen, scenario)
+        gen_id = gen.get("generation_id")
+        req = build_request_from_cp4_2_5(gen, scenarios[gen["dataset_index"]])
+        eval_path = _generation_evaluation_path(gen_id, evaluations_dir) if gen_id else None
+        if eval_path is not None and eval_path.exists():
+            try:
+                with open(eval_path, "r", encoding="utf-8") as fh:
+                    existing = EvaluationRecord.from_dict(json.load(fh))
+            except (ValueError, KeyError, OSError):
+                existing = None
+            if existing is not None:
+                if existing.evaluation_status.value in terminal_keep:
+                    if existing.evaluation_status == EvaluationStatus.SUCCESS:
+                        skipped["success"] += 1
+                    else:
+                        skipped["manual_review"] += 1
+                    continue
+                # FAILED on disk -> eligible for retry
+                skipped["failed_existing"] += 1
         pending.append((gen, req))
-    return pending
+    return pending, skipped
 
 
 def run_evaluation_phase(
     api_key: Optional[str] = None,
     spacing_seconds: float = 12.0,
+    max_evals: Optional[int] = None,
 ) -> None:
     """Phase 2: evaluate each generation with Gemini.
 
     Uses the **normal** GeminiEvaluator retry policy (max_retries=3).  Calls
     are spaced by *spacing_seconds* to respect free-tier rate limits.  Already-
-    evaluated generations are skipped (resume).
+    evaluated generations are skipped (resume from on-disk evaluation records).
+
+    Quota-aware: if Gemini returns HTTP 429 ``RESOURCE_EXHAUSTED`` (free-tier
+    daily limit), the batch stops promptly — the current generation is written
+    as a FAILED record (no label), and the loop terminates so the caller can
+    resume later once quota resets.
     """
     if not GENERATIONS_PATH.exists():
         raise SystemExit(
@@ -590,6 +669,10 @@ def run_evaluation_phase(
                 GENERATIONS_PATH
             )
         )
+
+    _load_env_file()
+    if api_key is None:
+        api_key = os.environ.get("GEMINI_API_KEY")
 
     with open(GENERATIONS_PATH, "r", encoding="utf-8") as fh:
         artifact = json.load(fh)
@@ -602,55 +685,141 @@ def run_evaluation_phase(
     for ds_idx in list(scenarios.keys()):
         if ds_idx in full_scenarios:
             scenarios[ds_idx] = full_scenarios[ds_idx]
+    # Pre-existing prompts (e.g. dataset_index 69929) may appear in the
+    # generations list without a matching entry in the artifact's scenarios
+    # list. Backfill them from the canonical list so evaluation can proceed.
+    for gen in artifact["generations"]:
+        ds_idx = gen["dataset_index"]
+        if ds_idx not in scenarios and ds_idx in full_scenarios:
+            scenarios[ds_idx] = full_scenarios[ds_idx]
 
-    pending = _eval_requests_from_generations(artifact["generations"], scenarios)
+    pending, skipped = _eval_requests_from_generations(
+        artifact["generations"], scenarios
+    )
+    if skipped["success"] or skipped["manual_review"] or skipped["failed_existing"]:
+        print(
+            "Phase 2 (evaluation): resuming — skipped {0} SUCCESS, "
+            "{1} MANUAL_REVIEW, {2} FAILED-existing (eligible for retry).".format(
+                skipped["success"], skipped["manual_review"], skipped["failed_existing"]
+            ),
+            flush=True,
+        )
     if not pending:
         print("Phase 2 (evaluation): all generations already evaluated.", flush=True)
         return
 
-    print(
-        "Phase 2 (evaluation): {0} pending generations (of {1} total).".format(
-            len(pending), len(artifact["generations"])
-        ),
-        flush=True,
-    )
+    pending_count = len(pending)
+    if max_evals is not None and max_evals > 0:
+        pending = pending[:max_evals]
+        print(
+            "Phase 2 (evaluation): {0} pending generations (of {1} total); "
+            "limiting to {2} this batch.".format(
+                len(pending), pending_count, max_evals
+            ),
+            flush=True,
+        )
+    else:
+        print(
+            "Phase 2 (evaluation): {0} pending generations (of {1} total).".format(
+                len(pending), len(artifact["generations"])
+            ),
+            flush=True,
+        )
 
     evaluator = GeminiEvaluator(
         api_key=api_key,
         retry_policy=None,  # use GeminiEvaluator's default RetryPolicy(max_retries=3)
     )
+    quota_exhausted = False
+    try:
+        for idx, (gen, req) in enumerate(pending):
+            try:
+                record = evaluator.evaluate(req)
+            except QuotaExhaustedError as exc:
+                # HTTP 429 RESOURCE_EXHAUSTED: quota exhausted. Write a FAILED
+                # record (no label) for the current generation and stop the
+                # batch immediately. On the next run (after quota resets), the
+                # FAILED record will be eligible for retry.
+                quota_exhausted = True
+                print(
+                    "  [{0}/{1}] QUOTA EXHAUSTED at {2}: stopping batch.".format(
+                        idx + 1, len(pending), gen["generation_id"]
+                    ),
+                    flush=True,
+                )
+                print("  {0}".format(exc), flush=True)
+                record = EvaluationRecord(
+                    schema_version=evaluator.schema_version,
+                    evaluator_model=evaluator.model,
+                    prompt_version=evaluator.prompt_version,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    source_generation_id=req.source_generation_id,
+                    dataset_id=req.dataset_id,
+                    evaluation_status=EvaluationStatus.FAILED,
+                    retry_count=0,
+                    claims=[],
+                    generation_label=None,
+                    generation_failure_types=[],
+                    rationale="",
+                    needs_human_review=False,
+                    error_type="QuotaExhaustedError",
+                    error_message=evaluator._redact(str(exc)),
+                    attempts=[{
+                        "attempt": 1,
+                        "status": "FAILED",
+                        "error_type": "QuotaExhaustedError",
+                        "error_message": evaluator._redact(str(exc)),
+                    }],
+                ).validate()
+                eval_path = _generation_evaluation_path(gen["generation_id"])
+                atomic_write_json(eval_path, record.to_dict())
+                gen["evaluation_status"] = "FAILED"
+                gen["generation_label"] = None
+                gen["claim_evaluations"] = None
+                atomic_write_json(GENERATIONS_PATH, artifact)
+                break
 
-    for idx, (gen, req) in enumerate(pending):
-        record = evaluator.evaluate(req)
-        record_dict = record.to_dict()
+            record_dict = record.to_dict()
 
-        eval_path = _generation_evaluation_path(gen["generation_id"])
-        atomic_write_json(eval_path, record_dict)
+            eval_path = _generation_evaluation_path(gen["generation_id"])
+            atomic_write_json(eval_path, record_dict)
 
-        gen["evaluation_status"] = record.evaluation_status.value
-        gen["generation_label"] = (
-            record.generation_label.value
-            if record.generation_label is not None
-            else None
-        )
-        gen["claim_evaluations"] = record_dict.get("claims")
+            gen["evaluation_status"] = record.evaluation_status.value
+            gen["generation_label"] = (
+                record.generation_label.value
+                if record.generation_label is not None
+                else None
+            )
+            gen["claim_evaluations"] = record_dict.get("claims")
 
-        if idx < len(pending) - 1 and spacing_seconds > 0:
-            time.sleep(spacing_seconds)
+            # Progressive checkpoint: persist the updated artifact after each
+            # generation so an interruption never loses completed evaluations.
+            atomic_write_json(GENERATIONS_PATH, artifact)
 
+            if idx < len(pending) - 1 and spacing_seconds > 0:
+                time.sleep(spacing_seconds)
+
+            print(
+                "  [{0}/{1}] {2}: status={3} label={4}".format(
+                    idx + 1,
+                    len(pending),
+                    gen["generation_id"],
+                    gen["evaluation_status"],
+                    gen["generation_label"] or "-",
+                ),
+                flush=True,
+            )
+    finally:
+        evaluator.close()
+
+    if quota_exhausted:
         print(
-            "  [{0}/{1}] {2}: status={3} label={4}".format(
-                idx + 1,
-                len(pending),
-                gen["generation_id"],
-                gen["evaluation_status"],
-                gen["generation_label"] or "-",
-            ),
+            "Phase 2 (evaluation): STOPPED due to quota exhaustion. "
+            "Resume later after quota resets (re-run 'evaluate').",
             flush=True,
         )
-
-    atomic_write_json(GENERATIONS_PATH, artifact)
-    print("Updated generations artifact with evaluations.", flush=True)
+    else:
+        print("Updated generations artifact with evaluations.", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -897,6 +1066,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         "--spacing", type=float, default=12.0,
         help="Seconds between Gemini calls (default: 12.0)",
     )
+    eval_p.add_argument(
+        "--max-evals", type=int, default=None,
+        help="Limit the number of evaluations in this batch (for quota safety)",
+    )
 
     build_p = subparsers.add_parser(
         "build", help="Phase 3: targets + predictor features"
@@ -911,7 +1084,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.phase == "generate":
         run_generation_phase(args.num_prompts, args.generations_per_prompt)
     elif args.phase == "evaluate":
-        run_evaluation_phase(spacing_seconds=args.spacing)
+        run_evaluation_phase(
+            spacing_seconds=args.spacing,
+            max_evals=args.max_evals,
+        )
     elif args.phase == "build":
         build_targets_and_features(
             force_rebuild_predictor=args.force_rebuild_predictor

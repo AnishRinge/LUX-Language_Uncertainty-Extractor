@@ -42,3 +42,4 @@ data/targets/
 # Keep manifests tracked
 !data/manifests/
 !data/manifests/**
+data/production/

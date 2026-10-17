@@ -11,6 +11,8 @@ Covers:
 """
 
 import json
+import inspect
+import os
 import shutil
 import sys
 import tempfile
@@ -30,6 +32,7 @@ from src.evaluation.schemas import (  # noqa: E402
 )
 from src.evaluation.prompt import PROMPT_VERSION  # noqa: E402
 from src.evaluation.evaluator_runner import build_request_from_cp4_2_5  # noqa: E402
+from src.evaluation.retry import QuotaExhaustedError, RetryPolicy  # noqa: E402
 
 STATUS_SUCCESS = cp42.STATUS_SUCCESS
 STATUS_FAILED = cp42.STATUS_FAILED
@@ -575,6 +578,10 @@ class TestBuildTargets(unittest.TestCase):
 # Evaluation request building tests
 # ---------------------------------------------------------------------------
 class TestEvalRequestBuilder(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+
     def test_only_question_context_answer_sent(self):
         from src.evaluation.prompt import build_messages
 
@@ -624,11 +631,125 @@ class TestEvalRequestBuilder(unittest.TestCase):
         gen_pending["generation_id"] = "squad_v2_5:5:1002"
 
         scenarios_map = {5: scenario}
-        pending = prod._eval_requests_from_generations(
+        pending, skipped = prod._eval_requests_from_generations(
             [gen_evaluated, gen_pending], scenarios_map
         )
         self.assertEqual(len(pending), 1)
         self.assertEqual(pending[0][0]["generation_id"], "squad_v2_5:5:1002")
+        self.assertEqual(skipped["success"], 1)
+
+    def test_resumes_from_existing_eval_file_success(self):
+        """An on-disk SUCCESS eval record skips the generation even when the
+        in-memory generations.json has evaluation_status == None."""
+        scenario = _make_scenario(7)
+        gen = prod.build_production_record(
+            scenario=scenario, dataset_index=7, generation_index=0,
+            seed=1001, prompt_text="t", prompt_token_count=5,
+            status=STATUS_SUCCESS, generated_answer="42",
+            hidden_state_ref="hs_7.json",
+        )
+        gen["generation_id"] = "squad_v2_7:7:1001"
+        gen["evaluation_status"] = None
+
+        eval_dir = Path(self.tmpdir) / "evaluations"
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        _write_eval_record(eval_dir, gen["generation_id"],
+                           EvaluationStatus.SUCCESS, GenerationLabel.RELIABLE)
+
+        pending, skipped = prod._eval_requests_from_generations(
+            [gen], {7: scenario}, evaluations_dir=eval_dir
+        )
+        self.assertEqual(len(pending), 0)
+        self.assertEqual(skipped["success"], 1)
+
+    def test_failed_eval_file_is_eligible_for_retry(self):
+        """An on-disk FAILED eval record makes the generation pending again."""
+        scenario = _make_scenario(7)
+        gen = prod.build_production_record(
+            scenario=scenario, dataset_index=7, generation_index=0,
+            seed=1001, prompt_text="t", prompt_token_count=5,
+            status=STATUS_SUCCESS, generated_answer="42",
+            hidden_state_ref="hs_7.json",
+        )
+        gen["generation_id"] = "squad_v2_7:7:1001"
+        gen["evaluation_status"] = None
+
+        eval_dir = Path(self.tmpdir) / "evaluations"
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        _write_eval_record(eval_dir, gen["generation_id"], EvaluationStatus.FAILED)
+
+        pending, skipped = prod._eval_requests_from_generations(
+            [gen], {7: scenario}, evaluations_dir=eval_dir
+        )
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(skipped["failed_existing"], 1)
+
+    def test_manual_review_eval_file_is_skipped(self):
+        """MANUAL_REVIEW records are terminal — never re-evaluated."""
+        scenario = _make_scenario(7)
+        gen = prod.build_production_record(
+            scenario=scenario, dataset_index=7, generation_index=0,
+            seed=1001, prompt_text="t", prompt_token_count=5,
+            status=STATUS_SUCCESS, generated_answer="42",
+            hidden_state_ref="hs_7.json",
+        )
+        gen["generation_id"] = "squad_v2_7:7:1001"
+        gen["evaluation_status"] = None
+
+        eval_dir = Path(self.tmpdir) / "evaluations"
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        _write_eval_record(eval_dir, gen["generation_id"],
+                           EvaluationStatus.MANUAL_REVIEW)
+
+        pending, skipped = prod._eval_requests_from_generations(
+            [gen], {7: scenario}, evaluations_dir=eval_dir
+        )
+        self.assertEqual(len(pending), 0)
+        self.assertEqual(skipped["manual_review"], 1)
+
+    def test_malformed_eval_file_is_re_evaluated(self):
+        """A corrupt evaluation file is overwritten, not silently skipped."""
+        scenario = _make_scenario(7)
+        gen = prod.build_production_record(
+            scenario=scenario, dataset_index=7, generation_index=0,
+            seed=1001, prompt_text="t", prompt_token_count=5,
+            status=STATUS_SUCCESS, generated_answer="42",
+            hidden_state_ref="hs_7.json",
+        )
+        gen["generation_id"] = "squad_v2_7:7:1001"
+        gen["evaluation_status"] = None
+
+        eval_dir = Path(self.tmpdir) / "evaluations"
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        safe = gen["generation_id"].replace(":", "_").replace("/", "_")
+        (eval_dir / "{0}.json".format(safe)).write_text(
+            "{not valid json", encoding="utf-8"
+        )
+
+        pending, skipped = prod._eval_requests_from_generations(
+            [gen], {7: scenario}, evaluations_dir=eval_dir
+        )
+        self.assertEqual(len(pending), 1)
+
+    def test_no_eval_file_means_pending(self):
+        """No on-disk eval file → generation is pending."""
+        scenario = _make_scenario(7)
+        gen = prod.build_production_record(
+            scenario=scenario, dataset_index=7, generation_index=0,
+            seed=1001, prompt_text="t", prompt_token_count=5,
+            status=STATUS_SUCCESS, generated_answer="42",
+            hidden_state_ref="hs_7.json",
+        )
+        gen["generation_id"] = "squad_v2_7:7:1001"
+        gen["evaluation_status"] = None
+
+        eval_dir = Path(self.tmpdir) / "evaluations"
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        pending, skipped = prod._eval_requests_from_generations(
+            [gen], {7: scenario}, evaluations_dir=eval_dir
+        )
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(skipped["success"], 0)
 
 
 # ---------------------------------------------------------------------------
@@ -718,6 +839,350 @@ class TestModuleStructure(unittest.TestCase):
         self.assertEqual(prod.DEVICE, "cpu")
         self.assertEqual(prod.THINKING_MODE, False)
         self.assertEqual(prod.DEFAULT_GENERATIONS_PER_PROMPT, len(cp42.SEEDS))
+
+    def test_has_load_env_file_function(self):
+        self.assertTrue(callable(getattr(prod, "_load_env_file", None)))
+
+    def test_has_close_method_on_phase(self):
+        self.assertIn("finally", inspect.getsource(prod.run_evaluation_phase))
+
+
+class TestEnvFileLoading(unittest.TestCase):
+    """Verify _load_env_file populates GEMINI_API_KEY from a .env file."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+
+    def test_returns_early_when_key_present(self):
+        saved = os.environ.get("GEMINI_API_KEY")
+        os.environ["GEMINI_API_KEY"] = "already-present"
+        try:
+            prod._load_env_file()
+            self.assertEqual(os.environ.get("GEMINI_API_KEY"), "already-present")
+        finally:
+            if saved is not None:
+                os.environ["GEMINI_API_KEY"] = saved
+            else:
+                os.environ.pop("GEMINI_API_KEY", None)
+        """Verify _load_env_file populates GEMINI_API_KEY from a .env file."""
+        env_file = Path(self.tmpdir) / ".env"
+        env_file.write_text(
+            "GEMINI_API_KEY=env-test-key-abc\n"
+            "OTHER_VAR=keep_me\n"
+            "# comment line\n",
+            encoding="utf-8",
+        )
+        saved = os.environ.pop("GEMINI_API_KEY", None)
+        saved_cwd = os.getcwd()
+        os.chdir(self.tmpdir)
+        try:
+            prod._load_env_file()
+            self.assertEqual(os.environ.get("GEMINI_API_KEY"), "env-test-key-abc")
+        finally:
+            os.chdir(saved_cwd)
+            if saved is not None:
+                os.environ["GEMINI_API_KEY"] = saved
+            else:
+                os.environ.pop("GEMINI_API_KEY", None)
+
+    def test_returns_early_when_key_present(self):
+        saved = os.environ.get("GEMINI_API_KEY")
+        os.environ["GEMINI_API_KEY"] = "already-present"
+        try:
+            prod._load_env_file()
+            self.assertEqual(os.environ.get("GEMINI_API_KEY"), "already-present")
+        finally:
+            if saved is not None:
+                os.environ["GEMINI_API_KEY"] = saved
+            else:
+                os.environ.pop("GEMINI_API_KEY", None)
+
+
+# ---------------------------------------------------------------------------
+# Quota-aware evaluation batch tests
+# ---------------------------------------------------------------------------
+class _SimpleResponse:
+    """Minimal response stand-in with a .text attribute."""
+    def __init__(self, text):
+        self.text = text
+
+
+class _QuotaFakeModels:
+    """Fake model client supporting both string responses and exceptions."""
+
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.calls = []
+
+    def generate_content(self, model, contents, config):
+        self.calls.append({"model": model, "contents": contents, "config": config})
+        i = min(len(self.calls) - 1, len(self.responses) - 1)
+        entry = self.responses[i]
+        if isinstance(entry, BaseException):
+            raise entry
+        return _SimpleResponse(entry)
+
+
+class _QuotaFakeClient:
+    def __init__(self, responses):
+        self.models = _QuotaFakeModels(responses)
+
+
+class TestQuotaAwareEvaluation(unittest.TestCase):
+    """Verify the evaluation batch stops promptly on 429 RESOURCE_EXHAUSTED."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+        self._patches = []
+        for attr in ["PROD_DIR", "GENERATIONS_PATH", "EVALUATIONS_DIR",
+                     "HIDDEN_STATES_DIR", "CHECKPOINT_PATH", "TARGETS_PATH",
+                     "PREDICTOR_FEATURES_PATH"]:
+            orig = getattr(prod, attr)
+            p = patch.object(prod, attr, Path(self.tmpdir) / Path(orig).name)
+            p.start()
+            self._patches.append(p)
+        self.addCleanup(lambda: [p.stop() for p in self._patches])
+
+    def _make_generations_artifact(self, n_prompts=3, seeds=None):
+        scenarios = _make_scenarios(n=n_prompts * 10, split_at=5)
+        selected = scenarios[:n_prompts]
+        gens = []
+        for ds_idx, scenario in enumerate(selected):
+            seed = seeds[ds_idx] if seeds and ds_idx < len(seeds) else 1001
+            gen = prod.build_production_record(
+                scenario=scenario,
+                dataset_index=ds_idx,
+                generation_index=0,
+                seed=seed,
+                prompt_text="test prompt",
+                prompt_token_count=10,
+                status=STATUS_SUCCESS,
+                generated_answer="42",
+                hidden_state_ref="hs_{0}.json".format(ds_idx),
+            )
+            gen["generation_id"] = "squad_v2_{0}:{1}:{2}".format(
+                ds_idx, ds_idx, seed
+            )
+            gens.append(gen)
+        artifact = {
+            "pipeline": {},
+            "scenarios": [{"dataset_index": ds_idx} for ds_idx in range(n_prompts)],
+            "generations": gens,
+        }
+        prod.atomic_write_json(prod.GENERATIONS_PATH, artifact)
+        return artifact, gens
+
+    def _patch_evaluator(self, responses):
+        """Patch GeminiEvaluator to use a fake client with given responses."""
+        def _make_evaluator(*args, **kwargs):
+            return prod.GeminiEvaluator(
+                client=_QuotaFakeClient(responses),
+                retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+            )
+        return patch.object(prod.GeminiEvaluator, "_build_client", return_value=None)
+
+    def test_quota_exhaustion_stops_batch(self):
+        """When Gemini returns 429 RESOURCE_EXHAUSTED, the batch stops at that
+        generation — subsequent generations are not evaluated."""
+        artifact, gens = self._make_generations_artifact(n_prompts=3)
+
+        class _Quota429(Exception):
+            code = 429
+            status = "RESOURCE_EXHAUSTED"
+
+        # First call succeeds, second triggers quota exhaustion
+        json_resp = json.dumps({
+            "evaluation_status": "SUCCESS",
+            "claims": [{"claim_text": "Q", "claim_status": "SUPPORTED",
+                        "evidence_text": "C", "failure_type": "NONE",
+                        "materiality": "NON_MATERIAL"}],
+            "generation_label": "RELIABLE",
+            "generation_failure_types": [],
+            "rationale": "ok",
+            "needs_human_review": False,
+        })
+        responses = [json_resp, _Quota429("RESOURCE_EXHAUSTED")]
+        fake_ev = prod.GeminiEvaluator(
+            client=_QuotaFakeClient(responses),
+            retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+        )
+        with patch.object(prod, "GeminiEvaluator", return_value=fake_ev):
+            prod.run_evaluation_phase(api_key="fake", spacing_seconds=0)
+
+        eval_files = list(prod.EVALUATIONS_DIR.glob("*.json"))
+        # Should have 2 eval files: 1 SUCCESS + 1 FAILED (quota)
+        self.assertEqual(len(eval_files), 2)
+        statuses = []
+        for f in eval_files:
+            d = json.loads(f.read_text())
+            statuses.append(d["evaluation_status"])
+        self.assertEqual(sorted(statuses), ["FAILED", "SUCCESS"])
+        # The third generation should NOT have an eval file (batch stopped)
+        remaining_gens = gens[2:]
+        for g in remaining_gens:
+            safe = g["generation_id"].replace(":", "_")
+            self.assertFalse((prod.EVALUATIONS_DIR / "{0}.json".format(safe)).exists())
+
+    def test_quota_failed_record_has_no_label(self):
+        """A quota-exhausted generation must not carry a hallucination label."""
+        artifact, gens = self._make_generations_artifact(n_prompts=1)
+
+        class _Quota429(Exception):
+            code = 429
+            status = "RESOURCE_EXHAUSTED"
+
+        responses = [_Quota429("RESOURCE_EXHAUSTED")]
+        fake_ev = prod.GeminiEvaluator(
+            client=_QuotaFakeClient(responses),
+            retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+        )
+        with patch.object(prod, "GeminiEvaluator", return_value=fake_ev):
+            prod.run_evaluation_phase(api_key="fake", spacing_seconds=0)
+
+        eval_files = list(prod.EVALUATIONS_DIR.glob("*.json"))
+        self.assertEqual(len(eval_files), 1)
+        d = json.loads(eval_files[0].read_text())
+        self.assertEqual(d["evaluation_status"], "FAILED")
+        self.assertIsNone(d["generation_label"])
+        self.assertEqual(d["error_type"], "QuotaExhaustedError")
+
+    def test_transient_503_retries_then_succeeds(self):
+        """A transient 503 is retried and can succeed on a later attempt."""
+        artifact, gens = self._make_generations_artifact(n_prompts=1)
+
+        class _ServiceUnavailable(Exception):
+            code = 503
+
+        json_resp = json.dumps({
+            "evaluation_status": "SUCCESS",
+            "claims": [{"claim_text": "Q", "claim_status": "SUPPORTED",
+                        "evidence_text": "C", "failure_type": "NONE",
+                        "materiality": "NON_MATERIAL"}],
+            "generation_label": "RELIABLE",
+            "generation_failure_types": [],
+            "rationale": "ok",
+            "needs_human_review": False,
+        })
+        responses = [_ServiceUnavailable("503"), json_resp]
+        fake_ev = prod.GeminiEvaluator(
+            client=_QuotaFakeClient(responses),
+            retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+        )
+        with patch.object(prod, "GeminiEvaluator", return_value=fake_ev):
+            prod.run_evaluation_phase(api_key="fake", spacing_seconds=0)
+
+        eval_files = list(prod.EVALUATIONS_DIR.glob("*.json"))
+        self.assertEqual(len(eval_files), 1)
+        d = json.loads(eval_files[0].read_text())
+        self.assertEqual(d["evaluation_status"], "SUCCESS")
+        self.assertEqual(d["generation_label"], "RELIABLE")
+        self.assertEqual(d["retry_count"], 1)
+
+    def test_checkpoint_preserved_on_quota_stop(self):
+        """The generations artifact is updated even when the batch stops on quota."""
+        artifact, gens = self._make_generations_artifact(n_prompts=3)
+
+        class _Quota429(Exception):
+            code = 429
+            status = "RESOURCE_EXHAUSTED"
+
+        json_resp = json.dumps({
+            "evaluation_status": "SUCCESS",
+            "claims": [{"claim_text": "Q", "claim_status": "SUPPORTED",
+                        "evidence_text": "C", "failure_type": "NONE",
+                        "materiality": "NON_MATERIAL"}],
+            "generation_label": "RELIABLE",
+            "generation_failure_types": [],
+            "rationale": "ok",
+            "needs_human_review": False,
+        })
+        responses = [json_resp, json_resp, _Quota429("RESOURCE_EXHAUSTED")]
+        fake_ev = prod.GeminiEvaluator(
+            client=_QuotaFakeClient(responses),
+            retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+        )
+        with patch.object(prod, "GeminiEvaluator", return_value=fake_ev):
+            prod.run_evaluation_phase(api_key="fake", spacing_seconds=0)
+
+        # Check that the generations artifact was updated with evaluation statuses
+        artifact = json.loads(prod.GENERATIONS_PATH.read_text())
+        statuses = [g["evaluation_status"] for g in artifact["generations"]]
+        # First two should be SUCCESS, third should be FAILED
+        self.assertEqual(statuses[0], "SUCCESS")
+        self.assertEqual(statuses[1], "SUCCESS")
+        self.assertEqual(statuses[2], "FAILED")
+
+    def test_resumption_after_quota_recovery(self):
+        """After quota recovery, a FAILED-quota generation is retried."""
+        artifact, gens = self._make_generations_artifact(n_prompts=1)
+
+        # First run: quota exhausted
+        class _Quota429(Exception):
+            code = 429
+            status = "RESOURCE_EXHAUSTED"
+
+        fake_ev_1 = prod.GeminiEvaluator(
+            client=_QuotaFakeClient([_Quota429("RESOURCE_EXHAUSTED")]),
+            retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+        )
+        with patch.object(prod, "GeminiEvaluator", return_value=fake_ev_1):
+            prod.run_evaluation_phase(api_key="fake", spacing_seconds=0)
+
+        # Verify FAILED record was written
+        eval_files = list(prod.EVALUATIONS_DIR.glob("*.json"))
+        self.assertEqual(len(eval_files), 1)
+        d = json.loads(eval_files[0].read_text())
+        self.assertEqual(d["evaluation_status"], "FAILED")
+
+        # Second run: quota recovered, succeeds
+        json_resp = json.dumps({
+            "evaluation_status": "SUCCESS",
+            "claims": [{"claim_text": "Q", "claim_status": "SUPPORTED",
+                        "evidence_text": "C", "failure_type": "NONE",
+                        "materiality": "NON_MATERIAL"}],
+            "generation_label": "RELIABLE",
+            "generation_failure_types": [],
+            "rationale": "ok",
+            "needs_human_review": False,
+        })
+        fake_ev_2 = prod.GeminiEvaluator(
+            client=_QuotaFakeClient([json_resp]),
+            retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+        )
+        with patch.object(prod, "GeminiEvaluator", return_value=fake_ev_2):
+            prod.run_evaluation_phase(api_key="fake", spacing_seconds=0)
+
+        # Verify SUCCESS record overwrote FAILED
+        d = json.loads(eval_files[0].read_text())
+        self.assertEqual(d["evaluation_status"], "SUCCESS")
+        self.assertEqual(d["generation_label"], "RELIABLE")
+
+    def test_max_evals_limits_batch(self):
+        """The --max-evals flag limits how many evaluations are attempted."""
+        artifact, gens = self._make_generations_artifact(n_prompts=5)
+        eval_dir = prod.EVALUATIONS_DIR
+
+        json_resp = json.dumps({
+            "evaluation_status": "SUCCESS",
+            "claims": [{"claim_text": "Q", "claim_status": "SUPPORTED",
+                        "evidence_text": "C", "failure_type": "NONE",
+                        "materiality": "NON_MATERIAL"}],
+            "generation_label": "RELIABLE",
+            "generation_failure_types": [],
+            "rationale": "ok",
+            "needs_human_review": False,
+        })
+        fake_ev = prod.GeminiEvaluator(
+            client=_QuotaFakeClient([json_resp] * 5),
+            retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None),
+        )
+        with patch.object(prod, "GeminiEvaluator", return_value=fake_ev):
+            prod.run_evaluation_phase(api_key="fake", spacing_seconds=0, max_evals=2)
+
+        eval_files = list(eval_dir.glob("*.json"))
+        self.assertEqual(len(eval_files), 2)
 
 
 if __name__ == "__main__":

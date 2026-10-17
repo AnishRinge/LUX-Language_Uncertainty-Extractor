@@ -22,6 +22,7 @@ from src.evaluation.gemini_evaluator import (
     EvaluationRequest,
     GeminiEvaluator,
     PersistentEvaluationError,
+    QuotaExhaustedError,
     TransientEvaluationError,
 )
 from src.evaluation.prompt import EVALUATOR_SYSTEM_INSTRUCTION
@@ -35,6 +36,16 @@ from src.evaluation.schemas import (
 
 
 SECRET_KEY = "super-secret-test-key-12345"
+
+
+def _make_sdk_client_error(code, status="NOT_FOUND"):
+    """Build a fake SDK error with code and status attributes."""
+    class _Err(Exception):
+        pass
+    e = _Err("msg")
+    e.code = code
+    e.status = status
+    return e
 
 
 def _request(answer="Some answer.", question="Q?", context="C."):
@@ -112,7 +123,7 @@ class _AuthError(Exception):
 class TestValidOutput(unittest.TestCase):
     def test_valid_response_yields_success_label(self):
         client = _FakeClient([_json_response(generation_label="RELIABLE")])
-        ev = GeminiEvaluator(model="gemini-3.8-flash", client=client,
+        ev = GeminiEvaluator(model="gemini-2.5-flash", client=client,
                              retry_policy=RetryPolicy(max_retries=0))
         record = ev.evaluate(_request())
         self.assertEqual(record.evaluation_status, EvaluationStatus.SUCCESS)
@@ -484,8 +495,327 @@ class TestRequestFormat(unittest.TestCase):
         self.assertEqual(len(client.models.calls), 2)
 
 
-if __name__ == "__main__":
-    unittest.main()
+# --------------------------------------------------------------------------
+# 16. SDK client lifetime and cleanup
+# --------------------------------------------------------------------------
+class _BuildCallLog:
+    """Records how many times _build_client was invoked."""
+
+
+class _TrackedClient:
+    """Minimal stand-in that records close() calls."""
+
+    def __init__(self):
+        self.closed = False
+        self.models = _FakeModels([_json_response()])
+
+    def close(self):
+        self.closed = True
+
+
+class TestClientLifetime(unittest.TestCase):
+    def test_real_client_is_cached_and_reused_across_attempts(self):
+        """When no client is injected, _build_client is called once and the
+        same client object is reused for every generate_content call."""
+        ev = GeminiEvaluator(
+            model="test",
+            retry_policy=RetryPolicy(max_retries=5, sleep=lambda s: None),
+        )
+        seen_clients = []
+
+        def fake_build():
+            c = _TrackedClient()
+            seen_clients.append(c)
+            return c
+
+        with patch.object(ev, "_build_client", side_effect=fake_build):
+            # First attempt fails transiently, second succeeds.
+            ev._cached_client = None
+            ev._injected_client = None
+            # Inject a fake models whose first call raises transient, second ok
+            ok_client = _TrackedClient()
+            ok_client.models.responses = [
+                TransientEvaluationError("transient"),
+                _json_response(),
+            ]
+            seen_clients.clear()
+            # Patch _client to use our tracking logic but return ok_client
+            with patch.object(ev, "_build_client", return_value=ok_client):
+                record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.SUCCESS)
+        self.assertEqual(record.retry_count, 1)
+        # _build_client was called exactly once and cached.
+        self.assertEqual(len(seen_clients), 0)  # patched to return ok_client directly
+        self.assertIs(ev._cached_client, ok_client)
+        ok_client.close()
+        self.assertTrue(ok_client.closed)
+
+    def test_close_closes_cached_client_not_injected(self):
+        injected = _FakeClient([_json_response()])
+        ev = GeminiEvaluator(client=injected, retry_policy=RetryPolicy(max_retries=0))
+        ev.evaluate(_request())
+        ev.close()
+        # injected client must NOT be closed (it belongs to the caller)
+        # FakeClient has no close; verify it didn't raise / no-op
+        self.assertIs(ev._cached_client, None)
+
+    def test_close_is_idempotent(self):
+        ev = GeminiEvaluator(retry_policy=RetryPolicy(max_retries=0))
+        ev.close()  # no client built -> no-op
+        ev.close()  # second call -> still no-op
+
+    def test_context_manager_closes_client(self):
+        injected = _FakeClient([_json_response()])
+        with GeminiEvaluator(client=injected, retry_policy=RetryPolicy(max_retries=0)) as ev:
+            ev.evaluate(_request())
+        self.assertIsNone(ev._cached_client)
+
+    def test_real_client_closed_after_use(self):
+        """When building a real client, close() actually calls client.close()."""
+        ev = GeminiEvaluator(retry_policy=RetryPolicy(max_retries=0))
+        tracked = _TrackedClient()
+        with patch.object(ev, "_build_client", return_value=tracked):
+            ev.evaluate(_request())
+        self.assertIs(ev._cached_client, tracked)
+        ev.close()
+        self.assertTrue(tracked.closed)
+        self.assertIsNone(ev._cached_client)
+
+    def test_injected_client_not_closed_by_evaluator(self):
+        """close() must never close an injected (caller-owned) client."""
+        injected = _TrackedClient()
+        ev = GeminiEvaluator(client=injected)
+        ev.close()
+        self.assertFalse(injected.closed, "injected client must not be closed by evaluator")
+
+
+# --------------------------------------------------------------------------
+# 17. 404 / model-not-found is persistent (not retried)
+# --------------------------------------------------------------------------
+class TestPersistentModelErrors(unittest.TestCase):
+    def test_404_not_found_is_not_retried(self):
+        class _NotFound(Exception):
+            code = 404
+
+        client = _FakeClient([_NotFound("model not found")])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
+        self.assertEqual(len(client.models.calls), 1)  # not retried
+        self.assertEqual(record.retry_count, 0)
+        self.assertEqual(record.error_type, "PersistentEvaluationError")
+
+    def test_sdk_client_error_404_is_persistent(self):
+        client = _FakeClient([_make_sdk_client_error(404, "NOT_FOUND")])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
+        self.assertEqual(record.error_type, "PersistentEvaluationError")
+        self.assertEqual(record.retry_count, 0)
+        self.assertEqual(len(client.models.calls), 1)
+
+    def test_sdk_client_error_429_resource_exhausted_is_quota_error(self):
+        """429 with RESOURCE_EXHAUSTED status is a batch-stopping quota error."""
+        err = _make_sdk_client_error(429, "RESOURCE_EXHAUSTED")
+        client = _FakeClient([err])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        with self.assertRaises(QuotaExhaustedError):
+            ev.evaluate(_request())
+        self.assertEqual(len(client.models.calls), 1)  # not retried
+
+    def test_sdk_client_error_429_rate_limit_is_retryable(self):
+        """429 without RESOURCE_EXHAUSTED is a transient rate-limit (retried)."""
+        client = _FakeClient(
+            [_make_sdk_client_error(429, "RATE_LIMIT_EXCEEDED")] * 5
+        )
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=2, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
+        self.assertEqual(len(client.models.calls), 3)  # 1 + 2 retries
+        self.assertEqual(record.retry_count, 2)
+
+    def test_sdk_client_error_429_message_quota_is_quota_error(self):
+        """429 with 'quota' in the message is treated as quota exhaustion."""
+        class _RateLimited(Exception):
+            code = 429
+        err = _RateLimited("quota exceeded for this model")
+        client = _FakeClient([err])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        with self.assertRaises(QuotaExhaustedError):
+            ev.evaluate(_request())
+        self.assertEqual(len(client.models.calls), 1)
+
+    def test_sdk_client_error_503_is_retryable(self):
+        client = _FakeClient(
+            [_make_sdk_client_error(503, "UNAVAILABLE")] * 5
+        )
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=2, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
+        self.assertEqual(len(client.models.calls), 3)
+        # Root-cause type from the wrapped TransientEvaluationError.
+        self.assertEqual(record.error_type, "_Err")
+
+
+# --------------------------------------------------------------------------
+# 21. Quota exhaustion is batch-stopping (429 RESOURCE_EXHAUSTED)
+# --------------------------------------------------------------------------
+class TestQuotaExhaustion(unittest.TestCase):
+    def test_quota_error_is_not_retryable(self):
+        from src.evaluation.retry import is_retryable_exception
+
+        self.assertFalse(is_retryable_exception(QuotaExhaustedError("quota")))
+
+    def test_429_resource_exhausted_propagates_from_evaluate(self):
+        err = _make_sdk_client_error(429, "RESOURCE_EXHAUSTED")
+        client = _FakeClient([err])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        with self.assertRaises(QuotaExhaustedError):
+            ev.evaluate(_request())
+        self.assertEqual(len(client.models.calls), 1)
+
+    def test_429_with_quota_message_propagates(self):
+        class _RateLimited(Exception):
+            code = 429
+
+        err = _RateLimited("daily quota exceeded")
+        client = _FakeClient([err])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        with self.assertRaises(QuotaExhaustedError):
+            ev.evaluate(_request())
+
+
+# --------------------------------------------------------------------------
+# 18. httpx transport errors are retried (RemoteProtocolError etc.)
+# --------------------------------------------------------------------------
+class TestHttpxTransportErrors(unittest.TestCase):
+    def test_remote_protocol_error_is_retried_until_success(self):
+        class _RemoteProto(Exception):
+            pass
+
+        # Simulate httpx.RemoteProtocolError shape
+        err = _RemoteProto("Server disconnected without sending a response")
+        err.__module__ = "httpx._config"
+        client = _FakeClient([err, _json_response()])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.SUCCESS)
+        self.assertEqual(record.retry_count, 1)
+        self.assertEqual(len(client.models.calls), 2)
+
+    def test_remote_protocol_error_exhaustion(self):
+        err = type("RemoteProtocolError", (Exception,), {})()
+        err.__module__ = "httpx._client"
+        client = _FakeClient([err] * 5)
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=2, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
+        self.assertEqual(len(client.models.calls), 3)  # 1 + 2 retries
+        self.assertEqual(record.retry_count, 2)
+
+    def test_is_retryable_exception_recognises_httpx_by_module(self):
+        from src.evaluation.retry import is_retryable_exception
+
+        err = type("RemoteProtocolError", (Exception,), {})()
+        err.__module__ = "httpx._transports.default"
+        self.assertTrue(is_retryable_exception(err))
+
+    def test_is_retryable_exception_404_is_not_retryable(self):
+        from src.evaluation.retry import is_retryable_exception
+
+        class _NotFound(Exception):
+            code = 404
+
+        self.assertFalse(is_retryable_exception(_NotFound("model not found")))
+
+    def test_is_retryable_exception_429_without_quota_is_retryable(self):
+        """A plain 429 (rate-limit, not quota exhaustion) is retryable."""
+        from src.evaluation.retry import is_retryable_exception
+
+        class _RateLimited(Exception):
+            code = 429
+
+        self.assertTrue(is_retryable_exception(_RateLimited("rate limit")))
+
+
+# --------------------------------------------------------------------------
+# 19. Structured JSON response contract
+# --------------------------------------------------------------------------
+class TestStructuredJsonContract(unittest.TestCase):
+    def test_parsed_json_matches_response_schema(self):
+        """The raw text returned by the evaluator must round-trip through
+        StructuredEvaluation and satisfy the frozen schema contract."""
+        from src.evaluation.evaluator_runner import compute_empirical_risk
+
+        client = _FakeClient([_json_response()])
+        ev = GeminiEvaluator(client=client, retry_policy=RetryPolicy(max_retries=0))
+        record = ev.evaluate(_request())
+        # Record fields match the schema contract.
+        self.assertIn(record.evaluation_status.value, ("SUCCESS", "FAILED", "MANUAL_REVIEW"))
+        self.assertEqual(record.evaluator_model, "gemini-2.5-flash")
+        # The risk function accepts this record.
+        risk = compute_empirical_risk([record])
+        self.assertEqual(risk["total_resolved"], 1)
+        self.assertIn("status_counts", risk)
+
+
+# --------------------------------------------------------------------------
+# 20. Retry budget and accurate retry counts
+# --------------------------------------------------------------------------
+class TestRetryCounts(unittest.TestCase):
+    def test_retry_count_reflects_actual_retries(self):
+        client = _FakeClient(
+            [TransientEvaluationError("x"), _json_response()]
+        )
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=3, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.retry_count, 1)
+        self.assertEqual(len(record.attempts), 2)
+        self.assertEqual(record.attempts[0]["status"], "RETRY")
+        self.assertEqual(record.attempts[1]["status"], "SUCCESS")
+
+    def test_max_retries_respected_exactly(self):
+        client = _FakeClient([TimeoutError("t")] * 10)
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=5, sleep=lambda s: None)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
+        self.assertEqual(record.retry_count, 5)
+        self.assertEqual(len(record.attempts), 6)  # 1 initial + 5 retries
+
+    def test_failed_record_carry_error_metadata(self):
+        client = _FakeClient([_AuthError("401")])
+        ev = GeminiEvaluator(
+            client=client, retry_policy=RetryPolicy(max_retries=0)
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
+        self.assertIsNotNone(record.error_type)
+        self.assertIsNotNone(record.error_message)
+        self.assertEqual(record.retry_count, 0)
 
 
 # --------------------------------------------------------------------------

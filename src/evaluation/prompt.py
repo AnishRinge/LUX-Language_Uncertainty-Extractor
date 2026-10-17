@@ -25,8 +25,8 @@ from .schemas import (
     Materiality,
 )
 
-PROMPT_VERSION = "CP4.4.0"
-EVALUATOR_MODEL = "gemini-3.8-flash"
+PROMPT_VERSION = "CP4.4.1"
+EVALUATOR_MODEL = "gemini-2.5-flash"
 DEFAULT_TEMPERATURE = 0.2
 
 EVALUATOR_SYSTEM_INSTRUCTION = """You are an independent evidence-grounded evaluator.

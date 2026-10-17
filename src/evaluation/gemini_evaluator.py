@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Protocol
 
 from .prompt import EVALUATOR_MODEL, PROMPT_VERSION, build_messages, response_schema
-from .retry import RetryPolicy, RetryExhausted, RetryableError, retry_call
+from .retry import QuotaExhaustedError, RetryPolicy, RetryExhausted, RetryableError, retry_call
 from .schemas import (
     SCHEMA_VERSION,
     EvaluationRecord,
@@ -115,6 +115,7 @@ class GeminiEvaluator:
         self.temperature = temperature
         self.retry_policy = retry_policy or RetryPolicy()
         self._injected_client = client
+        self._cached_client: Optional[Any] = None
         self._resolved_api_key = (
             api_key if api_key is not None else os.environ.get(API_KEY_ENV_VAR)
         )
@@ -124,7 +125,13 @@ class GeminiEvaluator:
     # Client construction (lazy SDK import)
     # ------------------------------------------------------------------
     def _build_client(self) -> Any:
-        """Create a real google.genai.Client. Lazy so tests need no SDK."""
+        """Create a real google.genai.Client. Lazy so tests need no SDK.
+
+        A single instance is retained for the lifetime of the evaluator so
+        that the underlying httpx transport is reused across attempts and
+        is never closed mid-request. The caller is responsible for closing
+        the client via :meth:`close` (or the context-manager protocol).
+        """
         try:
             from google import genai  # type: ignore
         except Exception as exc:  # noqa: BLE001 - surface a clear config error
@@ -136,12 +143,41 @@ class GeminiEvaluator:
             raise EvaluatorConfigError(
                 "GEMINI_API_KEY is not set; cannot construct a real Gemini client"
             )
-        return genai.Client(api_key=self._resolved_api_key)
+        # httpx default timeout is None (no timeout), which means a request to
+        # a high-demand model can hang indefinitely. Set an explicit ceiling so
+        # transient stalls surface as a retryable TimeoutError instead of a
+        # confusing RemoteProtocolError or an unbounded wait. 120 s is generous
+        # for a structured-JSON evaluation call.
+        http_options = genai.types.HttpOptions(timeout=120000)
+        return genai.Client(api_key=self._resolved_api_key, http_options=http_options)
 
     def _client(self) -> Any:
         if self._injected_client is not None:
             return self._injected_client
-        return self._build_client()
+        if self._cached_client is None:
+            self._cached_client = self._build_client()
+        return self._cached_client
+
+    # ------------------------------------------------------------------
+    # Client lifecycle
+    # ------------------------------------------------------------------
+    def close(self) -> None:
+        """Close any SDK client we built (never an injected one)."""
+        client = self._cached_client
+        if client is not None and self._injected_client is None:
+            close_fn = getattr(client, "close", None)
+            if close_fn is not None:
+                try:
+                    close_fn()
+                except Exception:  # noqa: BLE001 - best-effort cleanup
+                    pass
+        self._cached_client = None
+
+    def __enter__(self) -> "GeminiEvaluator":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     # ------------------------------------------------------------------
     # Request building
@@ -224,10 +260,32 @@ class GeminiEvaluator:
             return PersistentEvaluationError(
                 self._redact("gemini authentication/authorization failed: {0}".format(exc))
             )
-        if code_str == "400" or name in ("InvalidArgument",):
+        # 400 = malformed/invalid argument (e.g. bad schema, unsupported
+        # parameter). 404 = model or resource not found (e.g. an invalid
+        # model name). Both are deterministic — they fail identically on
+        # every retry — so they must NOT be retried.
+        if code_str in ("400", "404") or name in ("InvalidArgument", "NotFound"):
             return PersistentEvaluationError(
-                self._redact("gemini invalid argument: {0}".format(exc))
+                self._redact("gemini invalid argument/not found (not retried): {0}".format(exc))
             )
+        # HTTP 429 with RESOURCE_EXHAUSTED (free-tier daily limit) is a
+        # batch-stopping signal: retrying wastes API calls that will fail
+        # until quota resets. Other 429s (per-minute rate-limit) are transient.
+        if code_str == "429":
+            status = getattr(exc, "status", "") or ""
+            message = (str(exc) or "").lower()
+            if (
+                status == "RESOURCE_EXHAUSTED"
+                or "resource_exhausted" in message
+                or "quota" in message
+                or "daily" in message
+                or name == "ResourceExhausted"
+            ):
+                return QuotaExhaustedError(
+                    self._redact(
+                        "gemini quota exhausted (batch-stopping): {0}".format(exc)
+                    )
+                )
         return TransientEvaluationError(
             self._redact("gemini transient failure: {0}".format(exc))
         )
