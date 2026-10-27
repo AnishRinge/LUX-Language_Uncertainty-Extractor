@@ -24,6 +24,7 @@ from src.evaluation.gemini_evaluator import (
     PersistentEvaluationError,
     QuotaExhaustedError,
     TransientEvaluationError,
+    discover_api_keys,
 )
 from src.evaluation.prompt import EVALUATOR_SYSTEM_INSTRUCTION
 from src.evaluation.retry import RetryPolicy
@@ -165,7 +166,7 @@ class TestApiFailure(unittest.TestCase):
         record = ev.evaluate(_request())
         self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
         self.assertIsNone(record.generation_label)
-        self.assertEqual(record.error_type, "PersistentEvaluationError")
+        self.assertEqual(record.error_type, "CredentialAccessError")
         self.assertEqual(record.retry_count, 0)  # not retried
         self.assertEqual(len(client.models.calls), 1)
 
@@ -605,7 +606,7 @@ class TestPersistentModelErrors(unittest.TestCase):
         self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
         self.assertEqual(len(client.models.calls), 1)  # not retried
         self.assertEqual(record.retry_count, 0)
-        self.assertEqual(record.error_type, "PersistentEvaluationError")
+        self.assertEqual(record.error_type, "GlobalModelConfigurationError")
 
     def test_sdk_client_error_404_is_persistent(self):
         client = _FakeClient([_make_sdk_client_error(404, "NOT_FOUND")])
@@ -614,7 +615,7 @@ class TestPersistentModelErrors(unittest.TestCase):
         )
         record = ev.evaluate(_request())
         self.assertEqual(record.evaluation_status, EvaluationStatus.FAILED)
-        self.assertEqual(record.error_type, "PersistentEvaluationError")
+        self.assertEqual(record.error_type, "GlobalModelConfigurationError")
         self.assertEqual(record.retry_count, 0)
         self.assertEqual(len(client.models.calls), 1)
 
@@ -898,6 +899,216 @@ class TestWireFormat(unittest.TestCase):
         self.assertEqual(record.retry_count, 0)
 
 
+class TestMultiKeyFailover(unittest.TestCase):
+    def test_secondary_key_used_after_primary_quota_exhaustion(self):
+        client = _FakeClient([
+            QuotaExhaustedError("daily quota exhausted for primary project"),
+            _json_response(generation_label="RELIABLE"),
+        ])
+        ev = GeminiEvaluator(
+            api_key=["primary-key", "secondary-key"],
+            client=client,
+            retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(record.evaluation_status, EvaluationStatus.SUCCESS)
+        self.assertEqual(len(client.models.calls), 2)
+        self.assertNotIn("secondary-key", str(ev._redact("secondary-key")))
+        self.assertIn("<GEMINI_API_KEY-redacted>", str(ev._redact("secondary-key")))
+
+    def test_discover_api_keys_keeps_primary_then_numbered_keys(self):
+        env = {
+            "GEMINI_API_KEY": "primary",
+            "GEMINI_API_KEY_2": "second",
+            "GEMINI_API_KEY_10": "tenth",
+            "OTHER": "value",
+        }
+        self.assertEqual(
+            ["primary", "second", "tenth"],
+            discover_api_keys(environment=env),
+        )
+
+    def test_attempts_keep_actual_sparse_environment_slots(self):
+        from src.evaluation.gemini_evaluator import discover_api_credentials
+        env = {
+            "GEMINI_API_KEY": "primary",
+            "GEMINI_API_KEY_2": "secondary",
+        }
+        client = _FakeClient([
+            QuotaExhaustedError("daily quota"),
+            _json_response(),
+        ])
+        with patch.dict(os.environ, env, clear=True):
+            ev = GeminiEvaluator(
+                client=client,
+                retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+            )
+            self.assertEqual(
+                [("GEMINI_API_KEY", "primary"), ("GEMINI_API_KEY_2", "secondary")],
+                discover_api_credentials(),
+            )
+            record = ev.evaluate(_request())
+        self.assertEqual(
+            ["GEMINI_API_KEY", "GEMINI_API_KEY_2"],
+            [attempt["key_slot"] for attempt in record.attempts],
+        )
+
+    def test_all_bounded_quota_fallbacks_are_reported(self):
+        client = _FakeClient([
+            QuotaExhaustedError("daily quota exhausted") for _ in range(3)
+        ])
+        ev = GeminiEvaluator(
+            api_key=["primary-key", "secondary-key", "third-key", "unused-key"],
+            client=client,
+            retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+        )
+        with self.assertRaises(QuotaExhaustedError) as caught:
+            ev.evaluate(_request())
+        self.assertEqual(4, len(client.models.calls))
+        self.assertEqual(
+            ["GEMINI_API_KEY", "GEMINI_API_KEY_1", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3"],
+            [attempt["key_slot"] for attempt in caught.exception.attempts],
+        )
+
+    def test_all_configured_credentials_are_attempted_at_most_once_by_default(self):
+        credentials = ["key-{0}".format(index) for index in range(10)]
+        client = _FakeClient([
+            QuotaExhaustedError("daily quota exhausted") for _ in range(10)
+        ])
+        ev = GeminiEvaluator(
+            api_key=credentials,
+            client=client,
+            retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+        )
+        with self.assertRaises(QuotaExhaustedError) as caught:
+            ev.evaluate(_request())
+        self.assertEqual(10, len(client.models.calls))
+        self.assertEqual(10, len({attempt["key_slot"] for attempt in caught.exception.attempts}))
+
+    def test_credential_attempt_limit_can_be_configured(self):
+        client = _FakeClient([
+            QuotaExhaustedError("daily quota exhausted") for _ in range(3)
+        ])
+        ev = GeminiEvaluator(
+            api_key=["primary-key", "second-key", "third-key", "fourth-key"],
+            client=client,
+            retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+            max_credential_attempts=2,
+        )
+        with self.assertRaises(QuotaExhaustedError) as caught:
+            ev.evaluate(_request())
+        self.assertEqual(2, len(client.models.calls))
+        self.assertEqual(2, len(caught.exception.attempts))
+
+    def test_credential_attempt_limit_can_be_set_in_environment(self):
+        client = _FakeClient([
+            QuotaExhaustedError("daily quota exhausted") for _ in range(3)
+        ])
+        with patch.dict(os.environ, {"GEMINI_MAX_CREDENTIAL_ATTEMPTS": "2"}):
+            ev = GeminiEvaluator(
+                api_key=["primary-key", "second-key", "third-key"],
+                client=client,
+                retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+            )
+        with self.assertRaises(QuotaExhaustedError):
+            ev.evaluate(_request())
+        self.assertEqual(2, len(client.models.calls))
+
+    def test_previously_failed_slots_are_skipped(self):
+        client = _FakeClient([_json_response()])
+        with patch.dict(
+            os.environ,
+            {"GEMINI_SKIP_CREDENTIAL_SLOTS": "GEMINI_API_KEY,GEMINI_API_KEY_1"},
+            clear=False,
+        ):
+            ev = GeminiEvaluator(
+                api_key=["primary-key", "second-key", "third-key"],
+                client=client,
+                retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+            )
+        record = ev.evaluate(_request())
+        self.assertEqual(EvaluationStatus.SUCCESS, record.evaluation_status)
+        self.assertEqual(["GEMINI_API_KEY_2"], [a["key_slot"] for a in record.attempts])
+        self.assertEqual(1, len(client.models.calls))
+
+    def test_global_invalid_model_error_does_not_try_more_credentials(self):
+        class _InvalidModel(Exception):
+            code = 404
+            status = "NOT_FOUND"
+
+        client = _FakeClient([
+            _InvalidModel("models/invalid-model not found")
+        ])
+        ev = GeminiEvaluator(
+            api_key=["primary-key", "second-key", "third-key"],
+            client=client,
+            retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(EvaluationStatus.FAILED, record.evaluation_status)
+        self.assertEqual("GlobalModelConfigurationError", record.error_type)
+        self.assertEqual(1, len(client.models.calls))
+
+    def test_credential_permission_error_skips_to_next_bounded_key(self):
+        class _CredentialPermissionError(Exception):
+            code = 403
+
+        client = _FakeClient([
+            QuotaExhaustedError("daily quota exhausted"),
+            _CredentialPermissionError("permission denied for this project"),
+            _json_response(),
+        ])
+        ev = GeminiEvaluator(
+            api_key=["primary-key", "second-key", "third-key"],
+            client=client,
+            retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(EvaluationStatus.SUCCESS, record.evaluation_status)
+        self.assertEqual(
+            ["GEMINI_API_KEY", "GEMINI_API_KEY_1", "GEMINI_API_KEY_2"],
+            [attempt["key_slot"] for attempt in record.attempts],
+        )
+
+    def test_retired_model_error_stops_credential_failover(self):
+        class _NotFound(Exception):
+            code = 404
+            status = "NOT_FOUND"
+
+        client = _FakeClient([
+            _NotFound(
+                "This model models/gemini-2.5-flash is no longer available "
+                "to new users."
+            ),
+            _json_response(),
+        ])
+        ev = GeminiEvaluator(
+            api_key=["primary-key", "second-key"],
+            client=client,
+            retry_policy=RetryPolicy(max_retries=0, sleep=lambda s: None),
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(EvaluationStatus.FAILED, record.evaluation_status)
+        self.assertEqual("GlobalModelConfigurationError", record.error_type)
+        self.assertEqual(1, len(client.models.calls))
+        self.assertEqual(["GEMINI_API_KEY"], [a["key_slot"] for a in record.attempts])
+
+    def test_transient_server_error_does_not_fail_over_credentials(self):
+        server_error = _make_sdk_client_error(503, "UNAVAILABLE")
+        client = _FakeClient([server_error, _json_response()])
+        ev = GeminiEvaluator(
+            api_key=["primary-key", "secondary-key"],
+            client=client,
+            retry_policy=RetryPolicy(max_retries=1, sleep=lambda s: None),
+        )
+        record = ev.evaluate(_request())
+        self.assertEqual(EvaluationStatus.SUCCESS, record.evaluation_status)
+        self.assertEqual(2, len(client.models.calls))
+        self.assertEqual(
+            ["GEMINI_API_KEY", "GEMINI_API_KEY"],
+            [attempt["key_slot"] for attempt in record.attempts],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
-

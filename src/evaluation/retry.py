@@ -15,11 +15,15 @@ default) to keep evaluations reproducible.
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 
 class RetryableError(Exception):
     """Marker base: exceptions that should be retried."""
+
+
+class NonRetryableError(Exception):
+    """Marker base: deterministic errors that must not be retried."""
 
 
 class RetryExhausted(Exception):
@@ -41,6 +45,14 @@ class QuotaExhaustedError(Exception):
     next billing/daily window. It is NOT retryable.
     """
 
+    def __init__(
+        self,
+        message: str,
+        attempts: Optional[List[Dict[str, Any]]] = None,
+    ):
+        self.attempts = list(attempts or [])
+        super().__init__(message)
+
 
 def is_retryable_exception(exc: BaseException) -> bool:
     """Classify known transient error types by exception shape / name.
@@ -48,7 +60,7 @@ def is_retryable_exception(exc: BaseException) -> bool:
     Uses duck-typing on common attributes so it does not require importing the
     Google SDK (which may not be installed in the test environment).
     """
-    if isinstance(exc, QuotaExhaustedError):
+    if isinstance(exc, (QuotaExhaustedError, NonRetryableError)):
         return False
     if isinstance(exc, RetryableError):
         return True

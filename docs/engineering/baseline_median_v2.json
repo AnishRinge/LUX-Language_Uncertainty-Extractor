@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "feature_pipeline_version": "constant-no-features-v1",
+  "target_model": "Qwen/Qwen3-1.7B",
+  "model_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+  "generation_config": {
+    "device": "cpu",
+    "thinking_mode": false,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "max_new_tokens": 512
+  },
+  "statistic": "median",
+  "value": 0.0,
+  "n_train": 486,
+  "training_ids_sha256": "160f28f4ce18b9671a61a1ae89be8268dd48d7a4534fab9b6fa23c70b2e8de03",
+  "source_sha256": {
+    "data/production/cp4_7_0_gemini_3_5_flash_lite/targets_batch_05.json": "9f4a288540d41b31140248a690ad2759cff2d4cc66145fd0643ed4c28cf90914",
+    "data/production/squad_v2_expanded_500/generations.json": "1a7babd61f817642d718c96e98b14d40196c0c60e99fbfc5dea463ccea16f3b8"
+  },
+  "predictor_id": "8de2ab958aaf4520bc2737496f789f00bb6859ea2723761fe857a6bd8884bbbc"
+}

@@ -1,0 +1,6 @@
+{
+  "selected_prompts": 500,
+  "generations_total": 5000,
+  "eval_files": 5000,
+  "target_rows": 1231
+}

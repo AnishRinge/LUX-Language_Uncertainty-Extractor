@@ -1,27 +1,30 @@
-﻿# Virtual environment
+﻿# Python virtual environments
 .venv/
 venv/
 env/
 
-# Python
+# Python caches and test artifacts
 __pycache__/
-*.py[cod]
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.py[cod]
+*.log
+testlog.txt
 
-# Jupyter
-.ipynb_checkpoints/
-
-# Environment / secrets
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
 
-# Logs
-*.log
+# Local editor and agent configuration
+.vscode/
+.kilo/
 
-# Model caches / weights
+# Jupyter
+.ipynb_checkpoints/
+
+# Model caches and weights
 .cache/
 huggingface/
 models/
@@ -38,8 +41,14 @@ data/prompts/
 data/generations/
 data/evaluations/
 data/targets/
+data/production/
+
+# Generated experiment arrays
+experiments/**/*.npy
+
+# Superseded intermediate routing results
+experiments/routing_policy_evaluation_2026_10_27/results_initial.json
 
 # Keep manifests tracked
 !data/manifests/
 !data/manifests/**
-data/production/

@@ -19,10 +19,17 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Sequence, Tuple, Union
 
 from .prompt import EVALUATOR_MODEL, PROMPT_VERSION, build_messages, response_schema
-from .retry import QuotaExhaustedError, RetryPolicy, RetryExhausted, RetryableError, retry_call
+from .retry import (
+    NonRetryableError,
+    QuotaExhaustedError,
+    RetryPolicy,
+    RetryExhausted,
+    RetryableError,
+    retry_call,
+)
 from .schemas import (
     SCHEMA_VERSION,
     EvaluationRecord,
@@ -31,14 +38,68 @@ from .schemas import (
 )
 
 API_KEY_ENV_VAR = "GEMINI_API_KEY"
+MAX_CREDENTIAL_ATTEMPTS_ENV_VAR = "GEMINI_MAX_CREDENTIAL_ATTEMPTS"
+SKIP_CREDENTIAL_SLOTS_ENV_VAR = "GEMINI_SKIP_CREDENTIAL_SLOTS"
 SECRET_PLACEHOLDER = "<GEMINI_API_KEY-redacted>"
+
+
+def discover_api_keys(
+    api_key: Optional[Union[str, Sequence[str], Iterable[str]]] = None,
+    environment: Optional[Dict[str, str]] = None,
+) -> List[str]:
+    """Return ordered Gemini API keys, preserving the primary key first.
+
+    The project historically uses a single ``GEMINI_API_KEY``. Newer
+    configurations may also include ``GEMINI_API_KEY_1``, ``_2``, etc., each
+    backed by a different Google Cloud project. We preserve compatibility by
+    accepting either a single string or a list/sequence of keys; when no
+    explicit values are supplied, we read the environment in the canonical order
+    ``GEMINI_API_KEY``, then ``GEMINI_API_KEY_1`` and up.
+    """
+    return [value for _, value in discover_api_credentials(api_key, environment)]
+
+
+def discover_api_credentials(
+    api_key: Optional[Union[str, Sequence[str], Iterable[str]]] = None,
+    environment: Optional[Dict[str, str]] = None,
+) -> List[Tuple[str, str]]:
+    """Return ordered (environment slot, API key) pairs without exposing values."""
+    env = os.environ if environment is None else environment
+    credentials = []
+    seen = set()
+
+    def add(slot: str, value: Optional[str]) -> None:
+        if value and value not in seen:
+            credentials.append((slot, value))
+            seen.add(value)
+
+    if api_key is not None:
+        if isinstance(api_key, str):
+            add(API_KEY_ENV_VAR, api_key)
+        else:
+            for index, item in enumerate(api_key):
+                add(API_KEY_ENV_VAR if index == 0 else f"{API_KEY_ENV_VAR}_{index}", str(item))
+        return credentials
+
+    numbered_slots = sorted(
+        (
+            name
+            for name in env
+            if name.startswith(f"{API_KEY_ENV_VAR}_")
+            and name[len(API_KEY_ENV_VAR) + 1 :].isdigit()
+        ),
+        key=lambda name: int(name[len(API_KEY_ENV_VAR) + 1 :]),
+    )
+    for slot in [API_KEY_ENV_VAR] + numbered_slots:
+        add(slot, env.get(slot))
+    return credentials
 
 
 class EvaluatorError(Exception):
     """Base evaluator error."""
 
 
-class EvaluatorConfigError(EvaluatorError):
+class EvaluatorConfigError(EvaluatorError, NonRetryableError):
     """Configuration problem (missing key / SDK). Not retryable."""
 
 
@@ -46,8 +107,16 @@ class TransientEvaluationError(EvaluatorError, RetryableError):
     """Transient API failure (retryable)."""
 
 
-class PersistentEvaluationError(EvaluatorError):
+class PersistentEvaluationError(EvaluatorError, NonRetryableError):
     """Persistent, non-retryable API failure (e.g. auth / invalid argument)."""
+
+
+class CredentialAccessError(PersistentEvaluationError):
+    """Credential/project-specific authentication or model access failure."""
+
+
+class GlobalModelConfigurationError(PersistentEvaluationError):
+    """Model deprecation or invalid request configuration shared by credentials."""
 
 
 class EvaluationParseError(EvaluatorError, RetryableError):
@@ -102,24 +171,92 @@ class GeminiEvaluator:
     def __init__(
         self,
         model: str = EVALUATOR_MODEL,
-        api_key: Optional[str] = None,
+        api_key: Optional[Union[str, Sequence[str], Iterable[str]]] = None,
         client: Optional[Any] = None,
         retry_policy: Optional[RetryPolicy] = None,
         prompt_version: str = PROMPT_VERSION,
         schema_version: str = SCHEMA_VERSION,
         temperature: float = 0.2,
+        max_credential_attempts: Optional[int] = None,
+        excluded_credential_slots: Optional[Iterable[str]] = None,
+        message_builder: Optional[
+            Callable[[str, str, str], List[Dict[str, str]]]
+        ] = None,
+        response_schema_builder: Optional[Callable[[], Dict[str, Any]]] = None,
     ):
         self.model = model
         self.prompt_version = prompt_version
         self.schema_version = schema_version
         self.temperature = temperature
+        self.message_builder = message_builder or build_messages
+        self.response_schema_builder = response_schema_builder or response_schema
         self.retry_policy = retry_policy or RetryPolicy()
         self._injected_client = client
         self._cached_client: Optional[Any] = None
-        self._resolved_api_key = (
-            api_key if api_key is not None else os.environ.get(API_KEY_ENV_VAR)
+        self._all_api_credentials = discover_api_credentials(api_key=api_key)
+        excluded_slots = {
+            slot.strip()
+            for slot in os.environ.get(SKIP_CREDENTIAL_SLOTS_ENV_VAR, "").split(",")
+            if slot.strip()
+        }
+        excluded_slots.update(
+            slot.strip() for slot in (excluded_credential_slots or ()) if slot.strip()
         )
+        self._excluded_credential_slots = excluded_slots
+        self._api_credentials = [
+            (slot, key) for slot, key in self._all_api_credentials
+            if slot not in excluded_slots
+        ]
+        self._api_key_candidates = [key for _, key in self._all_api_credentials]
+        self._resolved_api_key = (
+            self._api_credentials[0][1] if self._api_credentials else None
+        )
+        configured_max = max_credential_attempts
+        if configured_max is None:
+            raw_max = os.environ.get(MAX_CREDENTIAL_ATTEMPTS_ENV_VAR)
+            if raw_max:
+                try:
+                    configured_max = int(raw_max)
+                except ValueError as exc:
+                    raise EvaluatorConfigError(
+                        f"{MAX_CREDENTIAL_ATTEMPTS_ENV_VAR} must be a positive integer"
+                    ) from exc
+        if configured_max is not None and configured_max < 1:
+            raise EvaluatorConfigError(
+                f"{MAX_CREDENTIAL_ATTEMPTS_ENV_VAR} must be a positive integer"
+            )
+        self.max_credential_attempts = configured_max
         # The API key is deliberately never persisted or logged.
+
+    def exclude_credential_slots(self, slots: Iterable[str]) -> None:
+        """Exclude credentials already known unusable for the active model."""
+        self._excluded_credential_slots.update(
+            slot.strip() for slot in slots if slot.strip()
+        )
+        self._api_credentials = [
+            (slot, key)
+            for slot, key in self._all_api_credentials
+            if slot not in self._excluded_credential_slots
+        ]
+
+    @staticmethod
+    def _is_credential_specific_error(error: BaseException) -> bool:
+        """Return whether another API key could fix an auth/model-access error."""
+        if isinstance(error, CredentialAccessError):
+            return True
+        if isinstance(error, GlobalModelConfigurationError):
+            return False
+        root = error
+        cause = getattr(error, "__cause__", None)
+        while cause is not None:
+            root = cause
+            cause = getattr(cause, "__cause__", None)
+        code = str(getattr(root, "code", ""))
+        return code in ("401", "403", "404") or type(root).__name__ in (
+            "Unauthorized",
+            "PermissionDenied",
+            "NotFound",
+        )
 
     # ------------------------------------------------------------------
     # Client construction (lazy SDK import)
@@ -186,7 +323,7 @@ class GeminiEvaluator:
         return {
             "temperature": self.temperature,
             "response_mime_type": "application/json",
-            "response_schema": response_schema(),
+            "response_schema": self.response_schema_builder(),
         }
 
     # ------------------------------------------------------------------
@@ -235,12 +372,17 @@ class GeminiEvaluator:
         """Redact any known API-key material from a string before persistence."""
         if not text:
             return text
-        for key in (self._resolved_api_key, os.environ.get(API_KEY_ENV_VAR, "")):
+        keys = list(self._api_key_candidates)
+        if self._resolved_api_key and self._resolved_api_key not in keys:
+            keys.append(self._resolved_api_key)
+        for key in keys:
             if key:
                 text = text.replace(key, SECRET_PLACEHOLDER)
         return text
 
     def _classify_api_error(self, exc: BaseException) -> EvaluatorError:
+        if isinstance(exc, QuotaExhaustedError):
+            return exc
         # Deterministic, local SDK argument-validation failures must not be
         # retried: a malformed request fails identically on every attempt.
         if type(exc).__name__ == "ValidationError" and "validation error" in str(
@@ -257,16 +399,15 @@ class GeminiEvaluator:
         code_str = str(code) if code is not None else ""
         name = type(exc).__name__
         if code_str in ("401", "403"):
-            return PersistentEvaluationError(
+            return CredentialAccessError(
                 self._redact("gemini authentication/authorization failed: {0}".format(exc))
             )
-        # 400 = malformed/invalid argument (e.g. bad schema, unsupported
-        # parameter). 404 = model or resource not found (e.g. an invalid
-        # model name). Both are deterministic — they fail identically on
-        # every retry — so they must NOT be retried.
+        # Explicit deprecation/retirement and ordinary unknown-model/resource
+        # responses are global configuration blockers, not a reason to try
+        # further credentials.
         if code_str in ("400", "404") or name in ("InvalidArgument", "NotFound"):
-            return PersistentEvaluationError(
-                self._redact("gemini invalid argument/not found (not retried): {0}".format(exc))
+            return GlobalModelConfigurationError(
+                self._redact("gemini invalid argument/model configuration (not retried): {0}".format(exc))
             )
         # HTTP 429 with RESOURCE_EXHAUSTED (free-tier daily limit) is a
         # batch-stopping signal: retrying wastes API calls that will fail
@@ -356,7 +497,7 @@ class GeminiEvaluator:
     # Public evaluation
     # ------------------------------------------------------------------
     def evaluate(self, request: EvaluationRequest) -> EvaluationRecord:
-        """Evaluate one generation with retry. Returns a terminal record.
+        """Evaluate one generation with retry.
 
         Terminal ``evaluation_status`` is one of:
           * SUCCESS        - resolved; carries a generation_label.
@@ -364,71 +505,133 @@ class GeminiEvaluator:
           * FAILED         - transport/parse failure exhausted retries. NEVER
                                carries a generation_label and NEVER contributes
                                to empirical risk.
+
+        When multiple Gemini API keys are configured, the evaluator tries the
+        primary key first and falls back to additional eligible credentials only
+        on confirmed quota exhaustion. This keeps the existing single-key
+        behaviour while allowing a deterministic failover path for multi-project
+        configurations.
         """
         timestamp = datetime.now(timezone.utc).isoformat()
-        schema = response_schema()
-        messages = build_messages(
+        messages = self.message_builder(
             request.question, request.context, request.generated_answer
         )
         attempts: List[Dict[str, Any]] = []
         policy = self.retry_policy
+        credentials = list(self._api_credentials)
 
-        def _one_attempt() -> StructuredEvaluation:
-            raw = self._call_gemini(messages)
-            return self._parse(raw)
-
-        def _log(attempt_number: int, exc: Optional[Exception]) -> None:
-            if exc is None:
-                attempts.append({"attempt": attempt_number, "status": "SUCCESS"})
-            else:
-                retryable = policy.is_retryable(exc) if policy else False
-                attempts.append(
-                    {
-                        "attempt": attempt_number,
-                        "status": "RETRY" if retryable else "FAILED",
-                        "error_type": type(exc).__name__,
-                        "error_message": self._redact(str(exc)),
-                    }
+        if not credentials:
+            if self._all_api_credentials and self._injected_client is None:
+                raise EvaluatorConfigError(
+                    "All configured Gemini credentials are excluded as previously unusable"
                 )
+            credentials = [(API_KEY_ENV_VAR, self._resolved_api_key or "")]
+        max_attempts = self.max_credential_attempts
+        if max_attempts is None:
+            max_attempts = len(credentials)
+        credentials = credentials[:max_attempts]
 
-        try:
-            structured = retry_call(
-                _one_attempt,
-                policy=policy,
-                on_attempt=_log,
-                description="gemini evaluation of {0}".format(
-                    request.source_generation_id
-                ),
-            )
-        except RetryExhausted as exc:
+        for key_index, (current_key_label, api_key) in enumerate(credentials):
+            self._resolved_api_key = api_key
+            self._cached_client = None
+            key_attempts: List[Dict[str, Any]] = []
+
+            def _one_attempt() -> StructuredEvaluation:
+                raw = self._call_gemini(messages)
+                return self._parse(raw)
+
+            def _log(attempt_number: int, exc: Optional[Exception]) -> None:
+                if exc is None:
+                    key_attempts.append({
+                        "attempt": attempt_number,
+                        "status": "SUCCESS",
+                        "key_slot": current_key_label,
+                    })
+                else:
+                    retryable = policy.is_retryable(exc) if policy else False
+                    key_attempts.append(
+                        {
+                            "attempt": attempt_number,
+                            "status": "RETRY" if retryable else "FAILED",
+                            "error_type": type(exc).__name__,
+                            "error_message": self._redact(str(exc)),
+                            "key_slot": current_key_label,
+                        }
+                    )
+
+            try:
+                structured = retry_call(
+                    _one_attempt,
+                    policy=policy,
+                    on_attempt=_log,
+                    description="gemini evaluation of {0}".format(
+                        request.source_generation_id
+                    ),
+                )
+            except RetryExhausted as exc:
+                attempts.extend(key_attempts)
+                if isinstance(exc.last_error, QuotaExhaustedError):
+                    if (
+                        key_index < len(credentials) - 1
+                    ):
+                        continue
+                    exc.last_error.attempts = list(attempts)
+                    raise exc.last_error
+                retry_count = max(0, len(attempts) - 1)
+                return self._failed_record(
+                    request, timestamp, attempts, retry_count, exc.last_error
+                )
+            except PersistentEvaluationError as exc:
+                attempts.extend(key_attempts)
+                if (
+                    self._is_credential_specific_error(exc)
+                    and key_index < len(credentials) - 1
+                ):
+                    continue
+                return self._failed_record(
+                    request,
+                    timestamp,
+                    attempts,
+                    retry_count=max(0, len(attempts) - 1),
+                    error=exc,
+                )
+            except QuotaExhaustedError as exc:
+                attempts.extend(key_attempts)
+                if (
+                    key_index < len(credentials) - 1
+                ):
+                    continue
+                exc.attempts = list(attempts)
+                raise
+
+            attempts.extend(key_attempts)
             retry_count = max(0, len(attempts) - 1)
-            return self._failed_record(
-                request, timestamp, attempts, retry_count, exc.last_error
+            terminal_status = self._resolve_status(structured)
+            record = EvaluationRecord.from_structured(
+                structured,
+                evaluator_model=self.model,
+                prompt_version=self.prompt_version,
+                schema_version=self.schema_version,
+                source_generation_id=request.source_generation_id,
+                dataset_id=request.dataset_id,
+                retry_count=retry_count,
+                timestamp=timestamp,
+                attempts=attempts,
             )
-        except PersistentEvaluationError as exc:
-            return self._failed_record(
-                request, timestamp, attempts, retry_count=max(0, len(attempts) - 1), error=exc
+            record.evaluation_status = terminal_status
+            record.needs_human_review = bool(
+                structured.needs_human_review
+                or terminal_status == EvaluationStatus.MANUAL_REVIEW
             )
+            return record.validate()
 
-        retry_count = max(0, len(attempts) - 1)
-        terminal_status = self._resolve_status(structured)
-        record = EvaluationRecord.from_structured(
-            structured,
-            evaluator_model=self.model,
-            prompt_version=self.prompt_version,
-            schema_version=self.schema_version,
-            source_generation_id=request.source_generation_id,
-            dataset_id=request.dataset_id,
-            retry_count=retry_count,
-            timestamp=timestamp,
-            attempts=attempts,
+        return self._failed_record(
+            request,
+            timestamp,
+            attempts,
+            retry_count=max(0, len(attempts) - 1),
+            error=QuotaExhaustedError("gemini quota exhausted across all configured credentials"),
         )
-        record.evaluation_status = terminal_status
-        record.needs_human_review = bool(
-            structured.needs_human_review
-            or terminal_status == EvaluationStatus.MANUAL_REVIEW
-        )
-        return record.validate()
 
     def _failed_record(
         self,

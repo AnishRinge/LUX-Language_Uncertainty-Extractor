@@ -1047,6 +1047,7 @@ class TestQuotaAwareEvaluation(unittest.TestCase):
         self.assertEqual(d["evaluation_status"], "FAILED")
         self.assertIsNone(d["generation_label"])
         self.assertEqual(d["error_type"], "QuotaExhaustedError")
+        self.assertEqual(d["attempts"][0]["key_slot"], "GEMINI_API_KEY")
 
     def test_transient_503_retries_then_succeeds(self):
         """A transient 503 is retried and can succeed on a later attempt."""

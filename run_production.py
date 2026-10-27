@@ -52,7 +52,11 @@ from src.evaluation.evaluator_runner import (
     build_request_from_cp4_2_5,
     compute_empirical_risk,
 )
-from src.evaluation.gemini_evaluator import GeminiEvaluator, EvaluationRequest, QuotaExhaustedError
+from src.evaluation.gemini_evaluator import (
+    GeminiEvaluator,
+    EvaluationRequest,
+    QuotaExhaustedError,
+)
 from src.evaluation.schemas import EvaluationRecord, EvaluationStatus, GenerationLabel
 from src.utils.hashing import compute_sha256
 
@@ -119,7 +123,11 @@ def _load_env_file() -> None:
                     continue
                 key, value = line.split("=", 1)
                 key = key.strip()
-                if key == API_KEY_ENV_VAR or key.startswith(API_KEY_ENV_VAR + "_"):
+                if (
+                    key == API_KEY_ENV_VAR
+                    or key.startswith(API_KEY_ENV_VAR + "_")
+                    or key == "GEMINI_MAX_CREDENTIAL_ATTEMPTS"
+                ):
                     if not os.environ.get(key):
                         os.environ[key] = value.strip().strip('"').strip("'")
         except OSError:
@@ -671,8 +679,6 @@ def run_evaluation_phase(
         )
 
     _load_env_file()
-    if api_key is None:
-        api_key = os.environ.get("GEMINI_API_KEY")
 
     with open(GENERATIONS_PATH, "r", encoding="utf-8") as fh:
         artifact = json.load(fh)
@@ -733,6 +739,18 @@ def run_evaluation_phase(
     quota_exhausted = False
     try:
         for idx, (gen, req) in enumerate(pending):
+            eval_path = _generation_evaluation_path(gen["generation_id"])
+            previous_attempts = []
+            if eval_path.exists():
+                try:
+                    previous = json.loads(eval_path.read_text(encoding="utf-8"))
+                    if (
+                        previous.get("source_generation_id") == req.source_generation_id
+                        and previous.get("evaluation_status") == "FAILED"
+                    ):
+                        previous_attempts = previous.get("attempts", [])
+                except (json.JSONDecodeError, OSError):
+                    previous_attempts = []
             try:
                 record = evaluator.evaluate(req)
             except QuotaExhaustedError as exc:
@@ -747,7 +765,30 @@ def run_evaluation_phase(
                     ),
                     flush=True,
                 )
-                print("  {0}".format(exc), flush=True)
+                quota_attempts = getattr(exc, "attempts", [])
+                if quota_attempts:
+                    slots = sorted({
+                        attempt.get("key_slot")
+                        for attempt in quota_attempts
+                        if attempt.get("key_slot")
+                    })
+                    print(
+                        "  Quota exhausted after {0} credential attempt(s){1}.".format(
+                            len(quota_attempts),
+                            " across " + ", ".join(slots) if slots else "",
+                        ),
+                        flush=True,
+                    )
+                else:
+                    quota_attempts = [{
+                        "attempt": 1,
+                        "status": "FAILED",
+                        "error_type": "QuotaExhaustedError",
+                        "error_message": evaluator._redact(str(exc)),
+                    }]
+                all_attempts = list(previous_attempts) + list(quota_attempts)
+                for attempt_number, attempt in enumerate(all_attempts, start=1):
+                    attempt["attempt"] = attempt_number
                 record = EvaluationRecord(
                     schema_version=evaluator.schema_version,
                     evaluator_model=evaluator.model,
@@ -756,7 +797,7 @@ def run_evaluation_phase(
                     source_generation_id=req.source_generation_id,
                     dataset_id=req.dataset_id,
                     evaluation_status=EvaluationStatus.FAILED,
-                    retry_count=0,
+                    retry_count=max(0, len(all_attempts) - 1),
                     claims=[],
                     generation_label=None,
                     generation_failure_types=[],
@@ -764,12 +805,7 @@ def run_evaluation_phase(
                     needs_human_review=False,
                     error_type="QuotaExhaustedError",
                     error_message=evaluator._redact(str(exc)),
-                    attempts=[{
-                        "attempt": 1,
-                        "status": "FAILED",
-                        "error_type": "QuotaExhaustedError",
-                        "error_message": evaluator._redact(str(exc)),
-                    }],
+                    attempts=all_attempts,
                 ).validate()
                 eval_path = _generation_evaluation_path(gen["generation_id"])
                 atomic_write_json(eval_path, record.to_dict())
@@ -779,9 +815,14 @@ def run_evaluation_phase(
                 atomic_write_json(GENERATIONS_PATH, artifact)
                 break
 
+            if previous_attempts:
+                record.attempts = list(previous_attempts) + list(record.attempts)
+                for attempt_number, attempt in enumerate(record.attempts, start=1):
+                    attempt["attempt"] = attempt_number
+                record.retry_count = max(0, len(record.attempts) - 1)
+                record.validate()
             record_dict = record.to_dict()
 
-            eval_path = _generation_evaluation_path(gen["generation_id"])
             atomic_write_json(eval_path, record_dict)
 
             gen["evaluation_status"] = record.evaluation_status.value

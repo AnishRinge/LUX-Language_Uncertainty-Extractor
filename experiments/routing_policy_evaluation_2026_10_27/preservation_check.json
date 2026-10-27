@@ -1,0 +1,21 @@
+{
+  "before_count": 10487,
+  "after_count": 10487,
+  "changed_or_removed": [],
+  "added_outside_new_directory": [],
+  "source_hashes_match": {
+    "targets": true,
+    "generations": true,
+    "y": true,
+    "ids": true,
+    "folds": true,
+    "oof": true,
+    "provenance": true
+  },
+  "analysis_hash_matches": true,
+  "declared_contract_hash_matches": true,
+  "initial_final_routing_results_identical": true,
+  "tracked_diff_check_returncode": 0,
+  "scope": "Metadata inventory for all historical data/experiments; SHA256 for all seven analysis input files. Not a hash of every historical byte.",
+  "passed": true
+}

@@ -148,6 +148,17 @@ def _get_newest_eval_after(snapshot: dict) -> dict:
     return {}
 
 
+def _attempts_this_run(log: dict, generation_id: str, attempts: list) -> list:
+    """Exclude prior persisted attempts when reporting this invocation's calls."""
+    previous_counts = [
+        entry.get("attempts_recorded", entry.get("attempts", 0))
+        for entry in log.get("iterations", [])
+        if entry.get("gen_id") == generation_id
+    ]
+    previous_count = max(previous_counts, default=0)
+    return attempts[previous_count:]
+
+
 def _get_most_recent_eval() -> dict:
     """Return the content of the most recently modified eval file.
 
@@ -206,7 +217,41 @@ def _resolve_venv_python() -> str:
 VENV_PYTHON = _resolve_venv_python()
 
 
-def run_one_evaluation() -> dict:
+def _update_unusable_slots(record: dict, known_slots: dict) -> dict:
+    """Track credential-specific failures and clear slots after later success."""
+    updated = dict(known_slots)
+    for attempt in record.get("attempts", []):
+        slot = attempt.get("key_slot")
+        if not slot:
+            continue
+        if attempt.get("status") == "SUCCESS":
+            updated.pop(slot, None)
+            continue
+        error_type = attempt.get("error_type", "")
+        message = (attempt.get("error_message") or "").lower()
+        credential_specific = (
+            error_type in ("QuotaExhaustedError", "CredentialAccessError")
+            or (
+                error_type == "PersistentEvaluationError"
+                and any(code in message for code in ("401", "403"))
+            )
+            or "no longer available to new users" in message
+        )
+        if credential_specific:
+            updated[slot] = error_type or "CredentialAccessError"
+    return updated
+
+
+def _configured_credential_slots() -> set:
+    """Load repository env settings and return configured slot names only."""
+    from run_production import _load_env_file
+    from src.evaluation.gemini_evaluator import discover_api_credentials
+
+    _load_env_file()
+    return {slot for slot, _ in discover_api_credentials()}
+
+
+def run_one_evaluation(known_unusable_slots=None) -> dict:
     """Run one evaluation batch (max 1 generation) via the production CLI."""
     cmd = [
         VENV_PYTHON, str(ROOT / "run_production.py"),
@@ -214,12 +259,18 @@ def run_one_evaluation() -> dict:
         "--max-evals", str(MAX_EVALS_PER_BATCH),
         "--spacing", str(SPACING_SECONDS),
     ]
+    child_env = os.environ.copy()
+    if known_unusable_slots:
+        child_env["GEMINI_SKIP_CREDENTIAL_SLOTS"] = ",".join(
+            sorted(known_unusable_slots)
+        )
     proc = subprocess.run(
         cmd,
         capture_output=True,
         text=True,
         timeout=300,
         cwd=str(ROOT),
+        env=child_env,
     )
     return {
         "returncode": proc.returncode,
@@ -237,22 +288,27 @@ def should_stop_for_error(eval_record: dict) -> tuple:
     status = eval_record.get("evaluation_status", "")
     attempts = eval_record.get("attempts", [])
 
-    # Quota exhaustion is always a batch stop — does not recover within the day.
-    if error_type == "QuotaExhaustedError" or "QuotaExhaustedError" in str(attempts):
+    if status in ("SUCCESS", "MANUAL_REVIEW"):
+        return False, ""
+    if status != "FAILED":
+        return False, ""
+
+    last_attempt = attempts[-1] if attempts else {}
+    last_error_type = last_attempt.get("error_type", "")
+    last_error_message = last_attempt.get("error_message", "").lower()
+
+    # A successful fallback may contain earlier quota errors in attempts. Only
+    # classify the terminal error, so an earlier key's quota cannot mask it.
+    if error_type == "QuotaExhaustedError" or last_error_type == "QuotaExhaustedError":
         return True, "quota_exhausted"
 
-    # Persistent errors (401/403/400/404) — fail identically on every retry.
     if error_type in PERSISTENT_ROOT_CAUSES:
         return True, "persistent_error"
 
-    # Check attempt details for quota/resource exhaustion or persistent HTTP codes.
-    for attempt in attempts:
-        et = attempt.get("error_type", "")
-        msg = attempt.get("error_message", "").lower()
-        if "QuotaExhausted" in et or "ResourceExhausted" in et:
-            return True, "quota_exhausted"
-        if "401" in msg or "403" in msg or "400" in msg or "404" in msg:
-            return True, "persistent_error"
+    if last_error_type in ("PersistentEvaluationError", "EvaluatorConfigError"):
+        return True, "persistent_error"
+    if any(code in last_error_message for code in ("401", "403", "400", "404")):
+        return True, "persistent_error"
 
     # Server 503/504 errors that exhausted the bounded retry policy should stop
     # the autonomous run. The evaluator already retried up to max_retries=3.
@@ -294,6 +350,8 @@ def main():
     log = load_log()
     log["started_at"] = _now_iso()
     log["session_budget_seconds"] = session_budget
+    known_unusable_slots = dict(log.get("unusable_credential_slots", {}))
+    configured_slots = _configured_credential_slots()
 
     print("=" * 72)
     print("Autonomous Production Evaluation Runner")
@@ -302,6 +360,7 @@ def main():
     # Initial counts
     counts = _count_eval_statuses()
     pending = _count_pending()
+    log["starting_counts"] = dict(counts)
     print(f"Starting state: {counts}")
     print(f"Pending evaluations: {pending}")
 
@@ -313,17 +372,34 @@ def main():
         _write_report(log, counts, 0, "no_pending")
         return
 
-    # Check for existing quota exhaustion before starting.
-    # Only stop immediately on quota exhaustion — service errors (503/504)
-    # may have recovered since the previous attempt.
+    # Legacy quota records lack credential-slot provenance, so allow one run
+    # with the current bounded failover configuration. Once a record includes
+    # slot IDs for the configured attempts, a subsequent invocation can avoid
+    # repeating the same known-exhausted credentials.
     recent = _get_most_recent_eval()
+    if recent:
+        known_unusable_slots = _update_unusable_slots(
+            recent, known_unusable_slots
+        )
+    log["unusable_credential_slots"] = known_unusable_slots
     if recent:
         err = recent.get("error_type", "")
         attempts = recent.get("attempts", [])
         is_quota = (err == "QuotaExhaustedError" or
                     any("QuotaExhausted" in a.get("error_type", "") for a in attempts))
-        if is_quota:
+        attempted_slots = {
+            a.get("key_slot")
+            for a in attempts
+            if a.get("key_slot") and a.get("error_type") == "QuotaExhaustedError"
+        }
+        if (
+            recent.get("evaluation_status") == "FAILED"
+            and err == "QuotaExhaustedError"
+            and is_quota
+            and attempted_slots
+        ):
             print("STOPPING: Previous run ended with quota_exhausted.")
+            print("The previous record already contains credential-slot failures.")
             log["stop_reason"] = "quota_exhausted"
             log["stopped_at"] = _now_iso()
             _atomic_write_json(LOG_PATH, log)
@@ -360,6 +436,13 @@ def main():
             stop_reason = "completed"
             print(f"\nAll evaluations complete (pending={pending}).")
             break
+        if configured_slots and configured_slots.issubset(known_unusable_slots):
+            stop_reason = "credentials_exhausted"
+            print(
+                "\nAll configured credential slots are known exhausted or "
+                "unable to access the frozen model."
+            )
+            break
 
         print(f"\n--- Iteration {iterations + 1} ---")
         print(f"Pending: {pending}")
@@ -368,7 +451,7 @@ def main():
         # Run one evaluation
         print(f"Calling: run_production.py evaluate --max-evals {MAX_EVALS_PER_BATCH}")
         snapshot = _snapshot_eval_files()
-        result = run_one_evaluation()
+        result = run_one_evaluation(known_unusable_slots)
         print(f"Exit code: {result['returncode']}")
 
         # Inspect ONLY a genuinely new eval file produced by this invocation.
@@ -402,7 +485,20 @@ def main():
         print(f"Status: {status}")
         if error_type:
             print(f"Error type: {error_type}")
-        print(f"Attempts: {len(attempts)}")
+        current_attempts = _attempts_this_run(log, gen_id, attempts)
+        print(
+            f"Attempts this run: {len(current_attempts)} "
+            f"(record total: {len(attempts)})"
+        )
+        credential_slots = sorted({
+            a.get("key_slot") for a in current_attempts if a.get("key_slot")
+        })
+        known_unusable_slots = _update_unusable_slots(
+            recent, known_unusable_slots
+        )
+        log["unusable_credential_slots"] = known_unusable_slots
+        if credential_slots:
+            print(f"Credential slots: {', '.join(credential_slots)}")
 
         # A non-zero subprocess exit means the invocation did not complete
         # cleanly.  A stale/historical record's status must never override this.
@@ -415,7 +511,8 @@ def main():
                 "gen_id": gen_id,
                 "status": status,
                 "error_type": error_type or "subprocess_error",
-                "attempts": len(attempts),
+                "attempts": len(current_attempts),
+                "attempts_recorded": len(attempts),
                 "exit_code": result["returncode"],
                 "stderr_tail": stderr_tail,
             })
@@ -432,7 +529,10 @@ def main():
             "gen_id": gen_id,
             "status": status,
             "error_type": error_type,
-            "attempts": len(attempts),
+            "attempts": len(current_attempts),
+            "attempts_recorded": len(attempts),
+            "credential_slots": credential_slots,
+            "unusable_credential_slots": dict(known_unusable_slots),
             "exit_code": result["returncode"],
         })
         _atomic_write_json(LOG_PATH, log)
@@ -471,6 +571,22 @@ def main():
 def _write_report(log: dict, counts: dict, iterations: int, reason: str, remaining: int = None):
     if remaining is None:
         remaining = _count_pending()
+    starting_counts = log.get("starting_counts", counts)
+    current_run_entries = [
+        entry
+        for entry in log.get("iterations", [])
+        if entry.get("timestamp", "") >= log.get("started_at", "")
+    ]
+    newly_resolved = sum(
+        entry.get("status") == "SUCCESS" for entry in current_run_entries
+    )
+    newly_failed = sum(
+        entry.get("status") == "FAILED" for entry in current_run_entries
+    )
+    newly_manual_review = sum(
+        entry.get("status") == "MANUAL_REVIEW"
+        for entry in current_run_entries
+    )
 
     lines = [
         "# Production Evaluation Runner Report",
@@ -486,14 +602,18 @@ def _write_report(log: dict, counts: dict, iterations: int, reason: str, remaini
         f"- Subprocess Python (venv): {log.get('venv_python', '?')}",
         "",
         "## Starting Counts",
-        f"- SUCCESS: {counts.get('SUCCESS', 0)}",
-        f"- FAILED: {counts.get('FAILED', 0)}",
-        f"- MANUAL_REVIEW: {counts.get('MANUAL_REVIEW', 0)}",
-        f"- UNKNOWN: {counts.get('UNKNOWN', 0)}",
+        f"- SUCCESS: {starting_counts.get('SUCCESS', 0)}",
+        f"- FAILED: {starting_counts.get('FAILED', 0)}",
+        f"- MANUAL_REVIEW: {starting_counts.get('MANUAL_REVIEW', 0)}",
+        f"- UNKNOWN: {starting_counts.get('UNKNOWN', 0)}",
         "",
         "## Run Summary",
         f"- Iterations (evaluations attempted): {iterations}",
         f"- Stop reason: {reason}",
+        "- Process at report generation: stopped",
+        f"- Newly resolved evaluations: {newly_resolved}",
+        f"- Newly failed evaluations: {newly_failed}",
+        f"- Newly marked manual review: {newly_manual_review}",
         "",
         "## End-of-Run Counts",
         f"- SUCCESS: {counts.get('SUCCESS', 0)}",
@@ -505,13 +625,86 @@ def _write_report(log: dict, counts: dict, iterations: int, reason: str, remaini
         "## Progress Log",
     ]
 
-    for entry in log.get("iterations", []):
+    for index, entry in enumerate(log.get("iterations", [])):
+        prior_entries = [
+            prior
+            for prior in log.get("iterations", [])[:index]
+            if prior.get("gen_id") == entry.get("gen_id")
+        ]
+        prior_count = max(
+            (
+                prior.get("attempts_recorded", prior.get("attempts", 0))
+                for prior in prior_entries
+            ),
+            default=0,
+        )
+        total_attempts = entry.get(
+            "attempts_recorded", entry.get("attempts", 0)
+        )
+        attempts_this_run = (
+            entry.get("attempts", 0)
+            if "attempts_recorded" in entry
+            else max(0, total_attempts - prior_count)
+        )
+        slots = set(entry.get("credential_slots", []))
+        if "attempts_recorded" not in entry and prior_count:
+            prior_slots = {
+                slot
+                for prior in prior_entries
+                for slot in prior.get("credential_slots", [])
+            }
+            slots -= prior_slots
+        slot_summary = ", ".join(sorted(slots)) or "not recorded"
         lines.append(
             f"- [{entry.get('timestamp', '?')}] Gen {entry.get('gen_id', '?')}: "
             f"status={entry.get('status', '?')}, "
             f"error={entry.get('error_type', '-')}, "
-            f"attempts={entry.get('attempts', 0)}"
+            f"attempts this run={attempts_this_run}, "
+            f"total recorded attempts={total_attempts}, "
+            f"credential slots={slot_summary}, "
+            f"exit code={entry.get('exit_code', '?')}"
         )
+
+    latest_iteration = log.get("iterations", [])[-1:] or []
+    if latest_iteration:
+        generation_id = latest_iteration[0].get("gen_id")
+        latest_record = {}
+        if generation_id and EVAL_DIR.exists():
+            for path in sorted(
+                EVAL_DIR.glob("*.json"),
+                key=lambda candidate: candidate.stat().st_mtime,
+                reverse=True,
+            ):
+                try:
+                    candidate_record = json.loads(path.read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, OSError):
+                    continue
+                if candidate_record.get("source_generation_id") == generation_id:
+                    latest_record = candidate_record
+                    break
+        if latest_record.get("attempts"):
+            lines.extend([
+                "",
+                "## Latest Credential Outcomes",
+                f"- Generation: {generation_id}",
+                f"- Status: {latest_record.get('evaluation_status', 'UNKNOWN')}",
+                f"- Label: {latest_record.get('generation_label') or 'none'}",
+            ])
+            for attempt in latest_record["attempts"]:
+                slot = attempt.get("key_slot", "unknown slot")
+                error_type = attempt.get("error_type", "success")
+                message = (attempt.get("error_message") or "").lower()
+                if error_type == "QuotaExhaustedError":
+                    summary = "daily quota exhausted (HTTP 429)"
+                elif "no longer available to new users" in message:
+                    summary = "model access denied for this project (HTTP 404)"
+                elif error_type == "GlobalModelConfigurationError":
+                    summary = "global model/configuration error"
+                elif attempt.get("status") == "SUCCESS":
+                    summary = "successful evaluation response"
+                else:
+                    summary = error_type
+                lines.append(f"- {slot}: {summary}")
 
     lines.extend([
         "",

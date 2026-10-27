@@ -18,6 +18,7 @@ Usage:
 import json
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -72,6 +73,63 @@ def _print_section(title: str) -> None:
     print("\n" + "-" * 72)
     print(title)
     print("-" * 72)
+
+
+def _bootstrap_metric_intervals(
+    targets: List[float],
+    predictions: List[float],
+    baseline_predictions: Optional[List[float]] = None,
+    *,
+    random_state: int = DEFAULT_RANDOM_STATE,
+    resamples: int = 2000,
+) -> Dict[str, Any]:
+    """Percentile bootstrap intervals over paired held-out prompt predictions."""
+    y_true = np.asarray(targets, dtype=float)
+    y_pred = np.asarray(predictions, dtype=float)
+    if y_true.shape != y_pred.shape or y_true.ndim != 1:
+        raise ValueError("Bootstrap targets and predictions must be aligned vectors")
+    if len(y_true) < 2:
+        return {"method": "paired prompt bootstrap", "n_test": len(y_true)}
+    rng = np.random.default_rng(random_state)
+    indices = rng.integers(0, len(y_true), size=(resamples, len(y_true)))
+    errors = y_pred[indices] - y_true[indices]
+    mae = np.mean(np.abs(errors), axis=1)
+    rmse = np.sqrt(np.mean(np.square(errors), axis=1))
+    result = {
+        "method": "paired prompt bootstrap percentile interval",
+        "resamples": resamples,
+        "n_test": len(y_true),
+        "mae_95_percentile_interval": [
+            float(v) for v in np.quantile(mae, [0.025, 0.975])
+        ],
+        "rmse_95_percentile_interval": [
+            float(v) for v in np.quantile(rmse, [0.025, 0.975])
+        ],
+    }
+    if baseline_predictions is not None:
+        baseline = np.asarray(baseline_predictions, dtype=float)
+        if baseline.shape != y_true.shape:
+            raise ValueError("Bootstrap baseline predictions must align with targets")
+        baseline_mae = np.mean(
+            np.abs(baseline[indices] - y_true[indices]), axis=1
+        )
+        improvement = baseline_mae - mae
+        result["mae_improvement_over_baseline_95_percentile_interval"] = [
+            float(v) for v in np.quantile(improvement, [0.025, 0.975])
+        ]
+    return result
+
+
+def _target_distribution(rows, prompt_ids: List[str]) -> Dict[str, Any]:
+    selected = [row.risk for row in rows if row.prompt_id in set(prompt_ids)]
+    counts = Counter(f"{risk:.1f}" for risk in selected)
+    return {
+        "n_prompts": len(selected),
+        "risk_counts": dict(sorted(counts.items())),
+        "mean": float(np.mean(selected)) if selected else None,
+        "min": float(min(selected)) if selected else None,
+        "max": float(max(selected)) if selected else None,
+    }
 
 
 def run_comparison(
@@ -185,6 +243,13 @@ def run_comparison(
 
     # --- Step 4: Train and evaluate each predictor ---
     comparison: Dict[str, Any] = {
+        "dataset_stats": stats,
+        "interpretation_warning": (
+            "All eligible empirical-risk targets are identical; fitted metrics "
+            "cannot demonstrate predictive discrimination or improvement."
+            if stats["distinct_target_values"] < 2
+            else None
+        ),
         "shared_split": {
             "train_prompt_ids": train_ids,
             "test_prompt_ids": test_ids,
@@ -192,6 +257,11 @@ def run_comparison(
             "test_count": len(test_ids) if test_ids else 0,
             "test_size": test_size,
             "random_state": random_state,
+        },
+        "target_distribution": {
+            "common": _target_distribution(rows_po, common_ids),
+            "train": _target_distribution(rows_po, train_ids),
+            "test": _target_distribution(rows_po, test_ids),
         },
         "predictors": {},
     }
@@ -309,6 +379,11 @@ def _train_prompt_only(
                 "n_train": metrics.n_train,
                 "n_test": metrics.n_test,
                 "improvement_mae_over_baseline": metrics.baseline_mae - metrics.mae,
+                "uncertainty": _bootstrap_metric_intervals(
+                    metrics.test_targets, metrics.predictions,
+                    metrics.baseline_predictions,
+                    random_state=random_state,
+                ),
             },
             "model_path": str(model_path),
         }
@@ -365,6 +440,11 @@ def _train_hidden_only(
                 "n_train": metrics.n_train,
                 "n_test": metrics.n_test,
                 "improvement_mae_over_baseline": metrics.baseline_mae - metrics.mae,
+                "uncertainty": _bootstrap_metric_intervals(
+                    metrics.test_targets, metrics.predictions,
+                    metrics.baseline_predictions,
+                    random_state=random_state,
+                ),
             },
             "model_path": str(model_path),
         }
@@ -422,6 +502,11 @@ def _train_fusion(
                 "n_train": metrics.n_train,
                 "n_test": metrics.n_test,
                 "improvement_mae_over_baseline": metrics.baseline_mae - metrics.mae,
+                "uncertainty": _bootstrap_metric_intervals(
+                    metrics.test_targets, metrics.predictions,
+                    metrics.baseline_predictions,
+                    random_state=random_state,
+                ),
             },
             "model_path": str(model_path),
         }
