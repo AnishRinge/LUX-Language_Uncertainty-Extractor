@@ -1,0 +1,241 @@
+[
+  {
+    "request": {
+      "question": "What is the capital of France?",
+      "context": "Paris is the capital of France.",
+      "predictor": "prompt_only"
+    },
+    "status": 200,
+    "response": {
+      "risk_score": 0.21740319587972134,
+      "raw_score": 0.21740319587972134,
+      "predictor_name": "prompt_only",
+      "feature_group": "prompt_only",
+      "learned": true,
+      "target_model": "Qwen/Qwen3-1.7B",
+      "target_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "prompt_features": {
+        "question_chars": 30,
+        "context_chars": 31,
+        "question_tokens": 7,
+        "context_tokens": 7,
+        "question_ends_with_question_mark": true
+      },
+      "hidden_state_status": "not used",
+      "hidden_state_shape": null,
+      "pooling": null,
+      "prediction_timestamp": "2026-10-28T09:16:41.521058+00:00",
+      "warnings": [
+        "Research estimate; predictive validity and calibration are unverified. A lower estimate does not guarantee better factual correctness."
+      ],
+      "provenance": {
+        "artifact_sha256": "668efed01e6227b084e0b8fe678acb227624152d9845b49cd1504c568c0cec3e",
+        "cohort": "CP4.7 batch 05"
+      }
+    }
+  },
+  {
+    "request": {
+      "question": "Who?",
+      "context": "Paris.",
+      "predictor": "prompt_only"
+    },
+    "status": 200,
+    "response": {
+      "risk_score": 0.2895665419270655,
+      "raw_score": 0.2895665419270655,
+      "predictor_name": "prompt_only",
+      "feature_group": "prompt_only",
+      "learned": true,
+      "target_model": "Qwen/Qwen3-1.7B",
+      "target_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "prompt_features": {
+        "question_chars": 4,
+        "context_chars": 6,
+        "question_tokens": 2,
+        "context_tokens": 2,
+        "question_ends_with_question_mark": true
+      },
+      "hidden_state_status": "not used",
+      "hidden_state_shape": null,
+      "pooling": null,
+      "prediction_timestamp": "2026-10-28T09:16:41.526058+00:00",
+      "warnings": [
+        "Research estimate; predictive validity and calibration are unverified. A lower estimate does not guarantee better factual correctness."
+      ],
+      "provenance": {
+        "artifact_sha256": "668efed01e6227b084e0b8fe678acb227624152d9845b49cd1504c568c0cec3e",
+        "cohort": "CP4.7 batch 05"
+      }
+    }
+  },
+  {
+    "request": {
+      "question": "What is the capital of France?",
+      "context": "Paris is the capital of France.",
+      "predictor": "hidden_only"
+    },
+    "status": 200,
+    "response": {
+      "risk_score": 0.07306806743144989,
+      "raw_score": 0.07306806743144989,
+      "predictor_name": "hidden_only",
+      "feature_group": "hidden_only",
+      "learned": true,
+      "target_model": "Qwen/Qwen3-1.7B",
+      "target_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "prompt_features": {
+        "question_chars": 30,
+        "context_chars": 31,
+        "question_tokens": 7,
+        "context_tokens": 7,
+        "question_ends_with_question_mark": true
+      },
+      "hidden_state_status": "success",
+      "hidden_state_shape": [
+        29,
+        2048
+      ],
+      "pooling": "attention-mask token mean; last layer",
+      "prediction_timestamp": "2026-10-28T09:17:06.233701+00:00",
+      "warnings": [
+        "Research estimate; predictive validity and calibration are unverified. A lower estimate does not guarantee better factual correctness."
+      ],
+      "provenance": {
+        "artifact_sha256": "d049713a11693ccab3f3360ba23a2da208afa9d15eef7f2bf64963c2dd134bcc",
+        "cohort": "CP4.7 batch 05"
+      }
+    }
+  },
+  {
+    "request": {
+      "question": "What is the capital of France?",
+      "context": "Paris is the capital of France.",
+      "predictor": "fusion"
+    },
+    "status": 200,
+    "response": {
+      "risk_score": 0.47428810596466064,
+      "raw_score": 0.47428810596466064,
+      "predictor_name": "fusion",
+      "feature_group": "fusion",
+      "learned": true,
+      "target_model": "Qwen/Qwen3-1.7B",
+      "target_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "prompt_features": {
+        "question_chars": 30,
+        "context_chars": 31,
+        "question_tokens": 7,
+        "context_tokens": 7,
+        "question_ends_with_question_mark": true
+      },
+      "hidden_state_status": "success",
+      "hidden_state_shape": [
+        29,
+        2048
+      ],
+      "pooling": "attention-mask token mean; last layer",
+      "prediction_timestamp": "2026-10-28T09:17:18.622955+00:00",
+      "warnings": [
+        "Research estimate; predictive validity and calibration are unverified. A lower estimate does not guarantee better factual correctness."
+      ],
+      "provenance": {
+        "artifact_sha256": "dce2a8d183a322dc6e570436063048ff25bd90c6dee8e6e0ec95751c0dcda493",
+        "cohort": "CP4.7 batch 05"
+      }
+    }
+  },
+  {
+    "request": {
+      "question": "Q?",
+      "context": "",
+      "predictor": "mean"
+    },
+    "status": 200,
+    "response": {
+      "risk_score": 0.20864197530864198,
+      "raw_score": 0.20864197530864198,
+      "predictor_name": "mean",
+      "feature_group": "mean",
+      "learned": false,
+      "target_model": "Qwen/Qwen3-1.7B",
+      "target_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "prompt_features": null,
+      "hidden_state_status": "not used",
+      "hidden_state_shape": null,
+      "pooling": null,
+      "prediction_timestamp": "2026-10-28T09:17:18.630447+00:00",
+      "warnings": [
+        "Research estimate; predictive validity and calibration are unverified. A lower estimate does not guarantee better factual correctness."
+      ],
+      "provenance": {
+        "artifact_sha256": "8dd7f480878dbc56dd8bd60fd3d450d011fc0a6a4e5e00504908322719ed0cad",
+        "cohort": "CP4.7 batch 05"
+      }
+    }
+  },
+  {
+    "request": {
+      "question": "Q?",
+      "context": "",
+      "predictor": "median"
+    },
+    "status": 200,
+    "response": {
+      "risk_score": 0.0,
+      "raw_score": 0.0,
+      "predictor_name": "median",
+      "feature_group": "median",
+      "learned": false,
+      "target_model": "Qwen/Qwen3-1.7B",
+      "target_revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+      "prompt_features": null,
+      "hidden_state_status": "not used",
+      "hidden_state_shape": null,
+      "pooling": null,
+      "prediction_timestamp": "2026-10-28T09:17:18.635226+00:00",
+      "warnings": [
+        "Research estimate; predictive validity and calibration are unverified. A lower estimate does not guarantee better factual correctness."
+      ],
+      "provenance": {
+        "artifact_sha256": "9b34f7de581a4f7e0e3f3b0df7a0b9b18206d37cb24cfcd0ec7e4e42c93e70b0",
+        "cohort": "CP4.7 batch 05"
+      }
+    }
+  },
+  {
+    "request": {
+      "question": "",
+      "context": "",
+      "predictor": "prompt_only"
+    },
+    "status": 422,
+    "response": {
+      "detail": [
+        {
+          "type": "string_too_short",
+          "loc": [
+            "body",
+            "question"
+          ],
+          "msg": "String should have at least 1 character",
+          "input": "",
+          "ctx": {
+            "min_length": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "question": "Q?",
+      "context": "",
+      "predictor": "missing"
+    },
+    "status": 422,
+    "response": {
+      "detail": "Invalid input, representation, or incompatible predictor artifact"
+    }
+  }
+]

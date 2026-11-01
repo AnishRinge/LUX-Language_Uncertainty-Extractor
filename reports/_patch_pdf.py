@@ -1,0 +1,10 @@
+from pathlib import Path
+p=Path('reports/_make_pdf.py');s=p.read_text(encoding='utf-8-sig')
+s=s.replace('assert len(sections)==9','assert len(sections)==10')
+s=s.replace('p0.footer()','p0.footer()')
+s=s.replace('for idx,(number,title,body) in enumerate(sections, start=2):\n pg=Page(idx,title)','for idx,(number,title,body) in enumerate(sections, start=1):\n pg=Page(idx,title)')
+s=s.replace(' if idx==10:\n  pg.heading(\'Checks recorded in project logs\')',' if idx==9:\n  pg.heading(\'Checks recorded in project logs\')')
+s=s.replace('  pg.footer(); pages.append(pg); continue','  pg.footer(); pages.append(pg); continue')
+s=s.replace('pg.footer(); pages.append(pg)\n\n# PDF','pg.footer(); pages.append(pg)\n\n# PDF')
+s=s.replace('for pg in pages: pg.ops=[op.replace(\'•\',\'-\') for op in pg.ops]','for pg in pages: pg.ops=[op.replace(\'•\',\'-\') for op in pg.ops]\n# Put the cover block on page one and combine it with the objective page.\npages[1].ops = pages[0].ops[1:-1] + pages[1].ops\npages.pop(0)\npages[0].num=1')
+p.write_text(s,encoding='utf-8')

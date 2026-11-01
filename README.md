@@ -135,3 +135,23 @@ Pre-Generation Hidden Representation
         ▼              ▼              ▼
    Prompt-only    Hidden-only       Fusion
      baseline       baseline        model
+
+### Interactive pre-generation research interface
+
+In PowerShell, activate `.\.venv\Scripts\Activate.ps1`, install
+`python -m pip install -r requirements.txt`, then run:
+
+```
+python -m uvicorn lux_app:app --host 127.0.0.1 --port 8000
+```
+
+Open http://127.0.0.1:8000. Enter a question and optional context, select a
+predictor, and click Assess Risk. Edit either field and assess again to retain
+both results and their difference. Select another predictor with unchanged
+input for comparison. Default: saved CP4.7 batch-05 prompt-only Ridge.
+Hidden-only and fusion load the frozen Qwen revision from the local Hugging
+Face cache; missing assets produce an explicit error without fallback.
+CPU hidden extraction can take substantial time and memory. Interactive hidden
+inference rejects rendered inputs above 4096 tokens without truncation.
+Assessment never generates an answer. Baselines are constant references.
+These research scores are not calibrated correctness guarantees.

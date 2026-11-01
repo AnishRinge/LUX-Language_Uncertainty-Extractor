@@ -1,0 +1,431 @@
+{
+  "hardware": {
+    "os": "Windows-10-10.0.26200-SP0",
+    "cpu": "Intel64 Family 6 Model 140 Stepping 1, GenuineIntel",
+    "logical_processors": 8,
+    "physical_memory_bytes": 16952647680
+  },
+  "python": "3.11.5 (tags/v3.11.5:cce6ba9, Aug 24 2023, 14:38:34) [MSC v.1936 64 bit (AMD64)]",
+  "executable": "E:\\Projects\\LLM-Hallucination-Prediction\\LUX-Language_Uncertainty-Extractor\\.venv\\Scripts\\python.exe",
+  "sample": "12 synthetic cases: six lengths x text/structured Unicode",
+  "cold_runs": [
+    {
+      "import_ms": 6920.5337,
+      "artifact_load_ms": 1.2816,
+      "first_inference_and_route_ms": 0.4055,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121978880,
+        "peak_working_set_bytes": 121978880
+      },
+      "process_wall_ms": 7834.4446
+    },
+    {
+      "import_ms": 15152.0333,
+      "artifact_load_ms": 1.0109,
+      "first_inference_and_route_ms": 0.3728,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121634816,
+        "peak_working_set_bytes": 121634816
+      },
+      "process_wall_ms": 16010.2384
+    },
+    {
+      "import_ms": 9404.3539,
+      "artifact_load_ms": 1.1492,
+      "first_inference_and_route_ms": 0.3563,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121753600,
+        "peak_working_set_bytes": 121753600
+      },
+      "process_wall_ms": 10249.7904
+    },
+    {
+      "import_ms": 4286.3934,
+      "artifact_load_ms": 0.6585,
+      "first_inference_and_route_ms": 0.1902,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121806848,
+        "peak_working_set_bytes": 121806848
+      },
+      "process_wall_ms": 4786.3131
+    },
+    {
+      "import_ms": 10036.0691,
+      "artifact_load_ms": 1.8212,
+      "first_inference_and_route_ms": 0.3433,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121737216,
+        "peak_working_set_bytes": 121737216
+      },
+      "process_wall_ms": 10812.8626
+    },
+    {
+      "import_ms": 5494.9192,
+      "artifact_load_ms": 0.7255,
+      "first_inference_and_route_ms": 0.2151,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121765888,
+        "peak_working_set_bytes": 121765888
+      },
+      "process_wall_ms": 6224.5656
+    },
+    {
+      "import_ms": 4949.9147,
+      "artifact_load_ms": 1.1729,
+      "first_inference_and_route_ms": 0.3237,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121761792,
+        "peak_working_set_bytes": 121761792
+      },
+      "process_wall_ms": 5827.3691
+    },
+    {
+      "import_ms": 4763.1644,
+      "artifact_load_ms": 2.1291,
+      "first_inference_and_route_ms": 0.3501,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121671680,
+        "peak_working_set_bytes": 121671680
+      },
+      "process_wall_ms": 5698.2846
+    },
+    {
+      "import_ms": 15789.6826,
+      "artifact_load_ms": 0.6533,
+      "first_inference_and_route_ms": 0.1635,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121696256,
+        "peak_working_set_bytes": 121696256
+      },
+      "process_wall_ms": 16538.0947
+    },
+    {
+      "import_ms": 7539.4559,
+      "artifact_load_ms": 0.5851,
+      "first_inference_and_route_ms": 0.1459,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121761792,
+        "peak_working_set_bytes": 121761792
+      },
+      "process_wall_ms": 8127.6717
+    },
+    {
+      "import_ms": 2681.9126,
+      "artifact_load_ms": 0.4644,
+      "first_inference_and_route_ms": 0.1361,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121511936,
+        "peak_working_set_bytes": 121511936
+      },
+      "process_wall_ms": 3048.8307
+    },
+    {
+      "import_ms": 2612.3453,
+      "artifact_load_ms": 1.0727,
+      "first_inference_and_route_ms": 0.332,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121769984,
+        "peak_working_set_bytes": 121769984
+      },
+      "process_wall_ms": 2929.207
+    },
+    {
+      "import_ms": 2542.0283,
+      "artifact_load_ms": 0.4188,
+      "first_inference_and_route_ms": 0.1145,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121913344,
+        "peak_working_set_bytes": 121913344
+      },
+      "process_wall_ms": 2867.0805
+    },
+    {
+      "import_ms": 2334.6387,
+      "artifact_load_ms": 0.5594,
+      "first_inference_and_route_ms": 0.1555,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 122281984,
+        "peak_working_set_bytes": 122281984
+      },
+      "process_wall_ms": 2674.6762
+    },
+    {
+      "import_ms": 2597.2216,
+      "artifact_load_ms": 0.4205,
+      "first_inference_and_route_ms": 0.1159,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 122314752,
+        "peak_working_set_bytes": 122314752
+      },
+      "process_wall_ms": 2902.51
+    },
+    {
+      "import_ms": 3057.3616,
+      "artifact_load_ms": 0.9916,
+      "first_inference_and_route_ms": 0.2332,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121622528,
+        "peak_working_set_bytes": 121622528
+      },
+      "process_wall_ms": 3402.4405
+    },
+    {
+      "import_ms": 3330.2533,
+      "artifact_load_ms": 0.8247,
+      "first_inference_and_route_ms": 0.2503,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121831424,
+        "peak_working_set_bytes": 121831424
+      },
+      "process_wall_ms": 3747.1757
+    },
+    {
+      "import_ms": 2780.3599,
+      "artifact_load_ms": 0.6383,
+      "first_inference_and_route_ms": 0.2027,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121778176,
+        "peak_working_set_bytes": 121778176
+      },
+      "process_wall_ms": 3139.9151
+    },
+    {
+      "import_ms": 2483.568,
+      "artifact_load_ms": 0.57,
+      "first_inference_and_route_ms": 0.1499,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121577472,
+        "peak_working_set_bytes": 121577472
+      },
+      "process_wall_ms": 2931.1064
+    },
+    {
+      "import_ms": 2695.3975,
+      "artifact_load_ms": 0.4514,
+      "first_inference_and_route_ms": 0.1407,
+      "action": "escalate",
+      "risk": 0.20864197530864198,
+      "memory": {
+        "working_set_bytes": 121913344,
+        "peak_working_set_bytes": 121913344
+      },
+      "process_wall_ms": 3017.088
+    }
+  ],
+  "cold_summary_ms": {
+    "process_wall_ms": {
+      "n": 20,
+      "mean": 6138.483245,
+      "median": 4266.7444,
+      "p95": 16010.2384,
+      "min": 2674.6762,
+      "max": 16538.0947
+    },
+    "import_ms": {
+      "n": 20,
+      "mean": 5572.58035,
+      "median": 3808.3233499999997,
+      "p95": 15152.0333,
+      "min": 2334.6387,
+      "max": 15789.6826
+    },
+    "artifact_load_ms": {
+      "n": 20,
+      "mean": 0.879955,
+      "median": 0.692,
+      "p95": 1.8212,
+      "min": 0.4188,
+      "max": 2.1291
+    },
+    "first_inference_and_route_ms": {
+      "n": 20,
+      "mean": 0.23486,
+      "median": 0.2089,
+      "p95": 0.3728,
+      "min": 0.1145,
+      "max": 0.4055
+    }
+  },
+  "warm": {
+    "text_32": {
+      "chars": 32,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.09478110000000001,
+        "median": 0.0907,
+        "p95": 0.13,
+        "min": 0.0687,
+        "max": 0.5719
+      }
+    },
+    "structured_32": {
+      "chars": 76,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0960921,
+        "median": 0.092,
+        "p95": 0.1159,
+        "min": 0.0894,
+        "max": 0.4866
+      }
+    },
+    "text_256": {
+      "chars": 256,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0940579,
+        "median": 0.0901,
+        "p95": 0.1092,
+        "min": 0.0868,
+        "max": 0.3082
+      }
+    },
+    "structured_256": {
+      "chars": 300,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.1097428,
+        "median": 0.0988,
+        "p95": 0.1579,
+        "min": 0.0766,
+        "max": 0.516
+      }
+    },
+    "text_1024": {
+      "chars": 1024,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0976595,
+        "median": 0.0984,
+        "p95": 0.1272,
+        "min": 0.0727,
+        "max": 0.2503
+      }
+    },
+    "structured_1024": {
+      "chars": 1068,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0966424,
+        "median": 0.0978,
+        "p95": 0.115,
+        "min": 0.0746,
+        "max": 0.3195
+      }
+    },
+    "text_4096": {
+      "chars": 4096,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0962584,
+        "median": 0.0933,
+        "p95": 0.1354,
+        "min": 0.0702,
+        "max": 0.3273
+      }
+    },
+    "structured_4096": {
+      "chars": 4140,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0984701,
+        "median": 0.0946,
+        "p95": 0.1245,
+        "min": 0.089,
+        "max": 0.3502
+      }
+    },
+    "text_16384": {
+      "chars": 16384,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.096027,
+        "median": 0.0912,
+        "p95": 0.1297,
+        "min": 0.07,
+        "max": 0.3782
+      }
+    },
+    "structured_16384": {
+      "chars": 16428,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0975128,
+        "median": 0.0917,
+        "p95": 0.125,
+        "min": 0.0725,
+        "max": 0.5868
+      }
+    },
+    "text_65536": {
+      "chars": 65536,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.0991402,
+        "median": 0.0922,
+        "p95": 0.1332,
+        "min": 0.0891,
+        "max": 0.3629
+      }
+    },
+    "structured_65536": {
+      "chars": 65580,
+      "milliseconds": {
+        "n": 1000,
+        "mean": 0.089948,
+        "median": 0.091,
+        "p95": 0.1282,
+        "min": 0.0693,
+        "max": 0.3329
+      }
+    }
+  },
+  "warm_memory_before": {
+    "working_set_bytes": 122236928,
+    "peak_working_set_bytes": 122236928
+  },
+  "warm_memory_after": {
+    "working_set_bytes": 122593280,
+    "peak_working_set_bytes": 122593280
+  },
+  "method": "perf_counter_ns; sequential 20 fresh subprocesses; 120 warmup calls then 1000 calls per case including routing; serialization/assertions excluded from warm timing. Process wall includes startup/import/load/first call/memory probe/JSON/stdout/exit. OS filesystem cache is not flushed. Memory is native Windows working set and process peak.",
+  "limitations": "Local functional microbenchmark, not production throughput or real prompt distribution. No concurrency, target-model loading, hidden-state extraction, generation, evaluator or network. Module bootstrap before child timer is included only in process wall."
+}
